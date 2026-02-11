@@ -1,0 +1,181 @@
+"use client"
+
+import { useState, useCallback, useEffect } from "react"
+import { SentenceCell } from "@/components/sentence-cell"
+import { getAllSentences, type Sentence } from "@/lib/sentences"
+import {
+  getTodaysQueue,
+  getProgress,
+  practiceSentence,
+  recordListen,
+  getSettings,
+  getStreakData,
+  type SentenceProgress,
+} from "@/lib/srs"
+import { Flame, Zap, BookOpen } from "lucide-react"
+
+export function TodaysGrid() {
+  const [queue, setQueue] = useState<string[]>([])
+  const [sentences, setSentences] = useState<Sentence[]>([])
+  const [progressMap, setProgressMap] = useState<Record<string, SentenceProgress>>({})
+  const [settings, setSettings] = useState(getSettings())
+  const [streak, setStreak] = useState(getStreakData())
+  const [practiced, setPracticed] = useState(0)
+
+  const refreshData = useCallback(() => {
+    const allSentences = getAllSentences()
+    const allIds = allSentences.map((s) => s.id)
+    const currentSettings = getSettings()
+    const maxItems = currentSettings.gridCols * currentSettings.gridRows
+    const todaysQueue = getTodaysQueue(allIds, maxItems)
+
+    setSentences(allSentences)
+    setQueue(todaysQueue)
+    setSettings(currentSettings)
+    setStreak(getStreakData())
+
+    const newProgressMap: Record<string, SentenceProgress> = {}
+    for (const id of todaysQueue) {
+      newProgressMap[id] = getProgress(id)
+    }
+    setProgressMap(newProgressMap)
+  }, [])
+
+  useEffect(() => {
+    refreshData()
+  }, [refreshData])
+
+  const handlePractice = useCallback(
+    (id: string) => {
+      const updated = practiceSentence(id)
+      setProgressMap((prev) => ({ ...prev, [id]: updated }))
+      setPracticed((prev) => prev + 1)
+      setStreak(getStreakData())
+
+      // Refresh queue after practice to show new items
+      setTimeout(() => {
+        const allIds = getAllSentences().map((s) => s.id)
+        const maxItems = settings.gridCols * settings.gridRows
+        const newQueue = getTodaysQueue(allIds, maxItems)
+        setQueue(newQueue)
+        const newProgressMap: Record<string, SentenceProgress> = {}
+        for (const qId of newQueue) {
+          newProgressMap[qId] = getProgress(qId)
+        }
+        setProgressMap(newProgressMap)
+      }, 300)
+    },
+    [settings]
+  )
+
+  const handleListen = useCallback((id: string) => {
+    recordListen(id)
+    setProgressMap((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], listens: (prev[id]?.listens || 0) + 1 },
+    }))
+  }, [])
+
+  const sentenceMap = new Map(sentences.map((s) => [s.id, s]))
+
+  const dueCount = queue.filter((id) => {
+    const prog = progressMap[id]
+    return prog && prog.reps > 0
+  }).length
+
+  const newCount = queue.filter((id) => {
+    const prog = progressMap[id]
+    return !prog || prog.reps === 0
+  }).length
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Stats Bar */}
+      <div className="flex items-center gap-4 px-1">
+        <div className="flex items-center gap-1.5">
+          <Flame className="w-4 h-4 text-accent-orange" />
+          <span className="text-sm font-semibold text-foreground">
+            {streak.currentStreak}
+          </span>
+          <span className="text-xs text-muted-foreground">day streak</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Zap className="w-4 h-4 text-accent-blue" />
+          <span className="text-sm font-medium text-foreground">{dueCount}</span>
+          <span className="text-xs text-muted-foreground">reviews</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <BookOpen className="w-4 h-4 text-accent-green" />
+          <span className="text-sm font-medium text-foreground">{newCount}</span>
+          <span className="text-xs text-muted-foreground">new</span>
+        </div>
+        {practiced > 0 && (
+          <div className="ml-auto text-xs text-muted-foreground">
+            {practiced} practiced today
+          </div>
+        )}
+      </div>
+
+      {/* Grid */}
+      {queue.length > 0 ? (
+        <div
+          className="grid gap-2"
+          style={{
+            gridTemplateColumns: `repeat(${settings.gridCols}, minmax(0, 1fr))`,
+          }}
+        >
+          {queue.map((id) => {
+            const sentence = sentenceMap.get(id)
+            if (!sentence) return null
+            const progress = progressMap[id] || getProgress(id)
+            return (
+              <SentenceCell
+                key={id}
+                sentence={sentence}
+                progress={progress}
+                ttsSpeed={settings.ttsSpeed}
+                onPractice={handlePractice}
+                onListen={handleListen}
+              />
+            )
+          })}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-16 h-16 rounded-full bg-accent-green/10 flex items-center justify-center mb-4">
+            <BookOpen className="w-8 h-8 text-accent-green" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-1">All caught up!</h3>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            {"No sentences due for review. Explore themed pages to discover new sentences."}
+          </p>
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="flex items-center gap-3 px-1 pt-2 border-t border-border">
+        <span className="text-xs text-muted-foreground">Progress:</span>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-new border border-border" />
+          <span className="text-xs text-muted-foreground">New</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-started" />
+          <span className="text-xs text-muted-foreground">Started</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-building" />
+          <span className="text-xs text-muted-foreground">Building</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-strong" />
+          <span className="text-xs text-muted-foreground">Strong</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <span className="text-xs text-muted-foreground">Mastered</span>
+        </div>
+      </div>
+    </div>
+  )
+}
