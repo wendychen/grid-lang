@@ -11,6 +11,7 @@ import {
   recordListen,
   getSettings,
   getThemeStats,
+  pushToTodayQueue,
   type SentenceProgress,
 } from "@/lib/srs"
 import {
@@ -72,6 +73,7 @@ export function ThemedPages() {
   const handlePractice = useCallback(
     (id: string) => {
       const updated = practiceSentence(id)
+      pushToTodayQueue(id)
       setProgressMap((prev) => ({ ...prev, [id]: updated }))
     },
     []
@@ -79,6 +81,7 @@ export function ThemedPages() {
 
   const handleListen = useCallback((id: string) => {
     recordListen(id)
+    pushToTodayQueue(id)
     setProgressMap((prev) => ({
       ...prev,
       [id]: { ...prev[id], listens: (prev[id]?.listens || 0) + 1 },
@@ -122,7 +125,7 @@ export function ThemedPages() {
         <div
           className="grid gap-2"
           style={{
-            gridTemplateColumns: `repeat(${settings.gridCols}, minmax(0, 1fr))`,
+            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
           }}
         >
           {selectedTheme.sentences.map((sentence) => {
@@ -155,7 +158,7 @@ export function ThemedPages() {
       <p className="text-sm text-muted-foreground px-1">
         Explore 240 German sentences across 10 themed categories.
       </p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {themes.map((theme) => {
           const stats = getThemeStats(theme.sentences.map((s) => s.id))
           const Icon = ICON_MAP[theme.icon] || Hash

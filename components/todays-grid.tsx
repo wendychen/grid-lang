@@ -10,9 +10,11 @@ import {
   recordListen,
   getSettings,
   getStreakData,
+  getPushedQueue,
+  clearPushedQueue,
   type SentenceProgress,
 } from "@/lib/srs"
-import { Flame, Zap, BookOpen } from "lucide-react"
+import { Flame, Zap, BookOpen, ArrowDownToLine } from "lucide-react"
 
 export function TodaysGrid() {
   const [queue, setQueue] = useState<string[]>([])
@@ -21,6 +23,7 @@ export function TodaysGrid() {
   const [settings, setSettings] = useState(getSettings())
   const [streak, setStreak] = useState(getStreakData())
   const [practiced, setPracticed] = useState(0)
+  const [pushedCount, setPushedCount] = useState(0)
 
   const refreshData = useCallback(() => {
     const allSentences = getAllSentences()
@@ -28,6 +31,9 @@ export function TodaysGrid() {
     const currentSettings = getSettings()
     const maxItems = currentSettings.gridCols * currentSettings.gridRows
     const todaysQueue = getTodaysQueue(allIds, maxItems)
+
+    const pushed = getPushedQueue()
+    setPushedCount(pushed.length)
 
     setSentences(allSentences)
     setQueue(todaysQueue)
@@ -91,7 +97,7 @@ export function TodaysGrid() {
   return (
     <div className="flex flex-col gap-4">
       {/* Stats Bar */}
-      <div className="flex items-center gap-4 px-1">
+      <div className="flex flex-wrap items-center gap-4 px-1">
         <div className="flex items-center gap-1.5">
           <Flame className="w-4 h-4 text-accent-orange" />
           <span className="text-sm font-semibold text-foreground">
@@ -109,6 +115,13 @@ export function TodaysGrid() {
           <span className="text-sm font-medium text-foreground">{newCount}</span>
           <span className="text-xs text-muted-foreground">new</span>
         </div>
+        {pushedCount > 0 && (
+          <div className="flex items-center gap-1.5">
+            <ArrowDownToLine className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">{pushedCount}</span>
+            <span className="text-xs text-muted-foreground">from themes</span>
+          </div>
+        )}
         {practiced > 0 && (
           <div className="ml-auto text-xs text-muted-foreground">
             {practiced} practiced today
@@ -121,7 +134,7 @@ export function TodaysGrid() {
         <div
           className="grid gap-2"
           style={{
-            gridTemplateColumns: `repeat(${settings.gridCols}, minmax(0, 1fr))`,
+            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
           }}
         >
           {queue.map((id) => {
@@ -153,7 +166,7 @@ export function TodaysGrid() {
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-3 px-1 pt-2 border-t border-border">
+      <div className="flex flex-wrap items-center gap-3 px-1 pt-2 border-t border-border">
         <span className="text-xs text-muted-foreground">Progress:</span>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-sm cell-new border border-border" />

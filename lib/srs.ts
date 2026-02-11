@@ -13,6 +13,7 @@ export interface SentenceProgress {
 const STORAGE_KEY = "gridlang_progress"
 const SETTINGS_KEY = "gridlang_settings"
 const STREAK_KEY = "gridlang_streak"
+const PUSHED_KEY = "gridlang_pushed"
 
 export interface AppSettings {
   ttsSpeed: number
@@ -158,6 +159,18 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
   const today = getToday()
   const allProg = getAllProgress()
 
+  // 0. Start with pushed sentences from themed pages (highest priority)
+  const pushed = getPushedQueue()
+  const inQueue = new Set<string>()
+  const queue: string[] = []
+
+  for (const id of pushed) {
+    if (allSentenceIds.includes(id) && !inQueue.has(id)) {
+      queue.push(id)
+      inQueue.add(id)
+    }
+  }
+
   // 1. Get due reviews
   const dueReviews: { id: string; dueDate: string; position: number }[] = []
   const learned: Set<string> = new Set()
@@ -166,7 +179,7 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
     const prog = allProg[id]
     if (prog && prog.reps > 0) {
       learned.add(id)
-      if (prog.dueDate <= today) {
+      if (prog.dueDate <= today && !inQueue.has(id)) {
         dueReviews.push({ id, dueDate: prog.dueDate, position: prog.position })
       }
     }
@@ -178,11 +191,15 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
     return a.position - b.position
   })
 
-  const queue: string[] = dueReviews.slice(0, Math.min(8, maxItems)).map((r) => r.id)
+  const remaining = maxItems - queue.length
+  for (const r of dueReviews.slice(0, Math.min(8, remaining))) {
+    queue.push(r.id)
+    inQueue.add(r.id)
+  }
 
   // 2. Add new sentences if needed
   if (queue.length < maxItems) {
-    const unlearned = allSentenceIds.filter((id) => !learned.has(id))
+    const unlearned = allSentenceIds.filter((id) => !learned.has(id) && !inQueue.has(id))
     const needed = maxItems - queue.length
     for (let i = 0; i < Math.min(needed, unlearned.length); i++) {
       queue.push(unlearned[i])
@@ -277,6 +294,33 @@ export function resetAllProgress(): void {
   if (typeof window === "undefined") return
   localStorage.removeItem(STORAGE_KEY)
   localStorage.removeItem(STREAK_KEY)
+  localStorage.removeItem(PUSHED_KEY)
+}
+
+// ===== Pushed Queue (from themed pages to Today's grid) =====
+
+export function getPushedQueue(): string[] {
+  if (typeof window === "undefined") return []
+  try {
+    const data = localStorage.getItem(PUSHED_KEY)
+    return data ? JSON.parse(data) : []
+  } catch {
+    return []
+  }
+}
+
+export function pushToTodayQueue(sentenceId: string): void {
+  if (typeof window === "undefined") return
+  const queue = getPushedQueue()
+  if (!queue.includes(sentenceId)) {
+    queue.push(sentenceId)
+    localStorage.setItem(PUSHED_KEY, JSON.stringify(queue))
+  }
+}
+
+export function clearPushedQueue(): void {
+  if (typeof window === "undefined") return
+  localStorage.removeItem(PUSHED_KEY)
 }
 
 // ===== Stats =====

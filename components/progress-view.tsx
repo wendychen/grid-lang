@@ -66,7 +66,7 @@ export function ProgressView() {
       <h2 className="text-lg font-semibold text-foreground px-1">Your Progress</h2>
 
       {/* Streak Section */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border">
           <Flame className="w-6 h-6 text-accent-orange" />
           <span className="text-2xl font-bold text-foreground">{streak.currentStreak}</span>

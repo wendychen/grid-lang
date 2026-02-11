@@ -15,7 +15,7 @@ export function AppShell() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-lg mx-auto flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-4 py-3 lg:px-8">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Languages className="w-4 h-4 text-primary-foreground" />
@@ -32,7 +32,7 @@ export function AppShell() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-4 pb-24">
+      <main className="flex-1 w-full px-4 py-4 pb-24 lg:px-8">
         {activeView === "today" && <TodaysGrid />}
         {activeView === "themes" && <ThemedPages />}
         {activeView === "progress" && <ProgressView />}

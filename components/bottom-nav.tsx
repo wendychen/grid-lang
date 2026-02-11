@@ -22,7 +22,7 @@ const NAV_ITEMS: { id: AppView; label: string; icon: React.ComponentType<{ class
 export function BottomNav({ active, onChange }: BottomNavProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border z-50 safe-area-bottom">
-      <div className="max-w-lg mx-auto flex items-center justify-around py-2">
+      <div className="flex items-center justify-around py-2 max-w-2xl mx-auto">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon
           const isActive = active === item.id

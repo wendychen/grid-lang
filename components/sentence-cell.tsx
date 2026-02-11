@@ -23,6 +23,10 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
 
   const colorClass = getColorClass(progress.reps)
 
+  // Darken background based on listen count: each listen adds opacity
+  // 0 listens = 0, 1 = 0.04, 3 = 0.1, 5 = 0.15, 10+ = 0.25 (capped)
+  const listenIntensity = Math.min(progress.listens * 0.04, 0.25)
+
   const handleSpeak = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -74,8 +78,16 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
         }
       }}
     >
+      {/* Listen intensity overlay - gets darker with more listens */}
+      {listenIntensity > 0 && (
+        <div
+          className="absolute inset-0 rounded-lg pointer-events-none z-0"
+          style={{ backgroundColor: `rgba(0, 0, 0, ${listenIntensity})` }}
+        />
+      )}
+
       {/* Compact View */}
-      <div className="p-3 flex items-start justify-between gap-2">
+      <div className="relative z-10 p-3 flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm leading-tight truncate text-cell-foreground">
             {sentence.german}
@@ -106,7 +118,7 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
 
       {/* Expanded View */}
       {expanded && (
-        <div className="px-3 pb-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="relative z-10 px-3 pb-3 space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
           <div className="border-t border-foreground/10 pt-2">
             <p className="text-xs text-cell-muted font-mono">{sentence.phonetic}</p>
             <p className="text-sm text-cell-foreground/80 mt-1">{sentence.english}</p>
