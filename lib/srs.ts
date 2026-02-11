@@ -14,6 +14,15 @@ const STORAGE_KEY = "gridlang_progress"
 const SETTINGS_KEY = "gridlang_settings"
 const STREAK_KEY = "gridlang_streak"
 const PUSHED_KEY = "gridlang_pushed"
+const ACTIVITY_KEY = "gridlang_activity"
+
+export interface DailyActivity {
+  date: string
+  practiceCount: number
+  listenCount: number
+  sentenceIds: string[]
+}
+
 
 export interface AppSettings {
   ttsSpeed: number
@@ -129,8 +138,9 @@ export function practiceSentence(id: string): SentenceProgress {
   all[id] = prog
   saveAllProgress(all)
 
-  // Update daily streak
+  // Update daily streak and activity log
   updateDailyStreak()
+  recordDailyActivity(id, "practice")
 
   return prog
 }
@@ -151,6 +161,7 @@ export function recordListen(id: string): void {
   prog.listens += 1
   all[id] = prog
   saveAllProgress(all)
+  recordDailyActivity(id, "listen")
 }
 
 // ===== Today's Queue =====
@@ -281,9 +292,9 @@ function updateDailyStreak(): void {
 
   if (!streak.practiceDays.includes(today)) {
     streak.practiceDays.push(today)
-    // Keep only last 90 days
-    if (streak.practiceDays.length > 90) {
-      streak.practiceDays = streak.practiceDays.slice(-90)
+    // Keep only last 400 days
+    if (streak.practiceDays.length > 400) {
+      streak.practiceDays = streak.practiceDays.slice(-400)
     }
   }
 
@@ -295,6 +306,115 @@ export function resetAllProgress(): void {
   localStorage.removeItem(STORAGE_KEY)
   localStorage.removeItem(STREAK_KEY)
   localStorage.removeItem(PUSHED_KEY)
+  localStorage.removeItem(ACTIVITY_KEY)
+}
+
+// ===== Daily Activity Log =====
+
+function getAllActivity(): Record<string, DailyActivity> {
+  if (typeof window === "undefined") return {}
+  try {
+    const data = localStorage.getItem(ACTIVITY_KEY)
+    return data ? JSON.parse(data) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveAllActivity(activity: Record<string, DailyActivity>): void {
+  if (typeof window === "undefined") return
+  localStorage.setItem(ACTIVITY_KEY, JSON.stringify(activity))
+}
+
+function recordDailyActivity(sentenceId: string, type: "practice" | "listen"): void {
+  const today = getToday()
+  const all = getAllActivity()
+  const entry = all[today] || { date: today, practiceCount: 0, listenCount: 0, sentenceIds: [] }
+
+  if (type === "practice") {
+    entry.practiceCount += 1
+  } else {
+    entry.listenCount += 1
+  }
+
+  if (!entry.sentenceIds.includes(sentenceId)) {
+    entry.sentenceIds.push(sentenceId)
+  }
+
+  all[today] = entry
+
+  // Keep only last 400 days of activity to prevent unbounded growth
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 400)
+  const cutoffStr = cutoff.toISOString().split("T")[0]
+  for (const key of Object.keys(all)) {
+    if (key < cutoffStr) delete all[key]
+  }
+
+  saveAllActivity(all)
+}
+
+export function getActivityForRange(days: number): DailyActivity[] {
+  const all = getAllActivity()
+  const result: DailyActivity[] = []
+  const today = new Date()
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const dateStr = d.toISOString().split("T")[0]
+    result.push(
+      all[dateStr] || { date: dateStr, practiceCount: 0, listenCount: 0, sentenceIds: [] }
+    )
+  }
+
+  return result
+}
+
+// ===== Export / Import =====
+
+export interface GridLangBackup {
+  version: 1
+  exportedAt: string
+  progress: Record<string, SentenceProgress>
+  settings: AppSettings
+  streak: StreakData
+  activity: Record<string, DailyActivity>
+  pushed: string[]
+}
+
+export function exportAllData(): GridLangBackup {
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    progress: getAllProgress(),
+    settings: getSettings(),
+    streak: getStreakData(),
+    activity: getAllActivity(),
+    pushed: getPushedQueue(),
+  }
+}
+
+export function importAllData(backup: GridLangBackup): void {
+  if (typeof window === "undefined") return
+  if (!backup || backup.version !== 1) {
+    throw new Error("Invalid backup file format")
+  }
+  if (backup.progress) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(backup.progress))
+  }
+  if (backup.settings) {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(backup.settings))
+  }
+  if (backup.streak) {
+    localStorage.setItem(STREAK_KEY, JSON.stringify(backup.streak))
+  }
+  if (backup.activity) {
+    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(backup.activity))
+  }
+  if (backup.pushed) {
+    localStorage.setItem(PUSHED_KEY, JSON.stringify(backup.pushed))
+  }
 }
 
 // ===== Pushed Queue (from themed pages to Today's grid) =====

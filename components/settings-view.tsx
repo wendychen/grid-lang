@@ -1,22 +1,30 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { getSettings, saveSettings, resetAllProgress, type AppSettings } from "@/lib/srs"
+import {
+  getSettings,
+  saveSettings,
+  resetAllProgress,
+  exportAllData,
+  importAllData,
+  type AppSettings,
+  type GridLangBackup,
+} from "@/lib/srs"
 import { speakGerman } from "@/lib/tts"
-import { Volume2, RotateCw, AlertTriangle } from "lucide-react"
+import { Volume2, RotateCw, AlertTriangle, Download, Upload, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function SettingsView() {
   const [settings, setSettings] = useState<AppSettings>({
     gridCols: 3,
     gridRows: 4,
-    ttsSpeed: 0.85,
-    showTranslation: true,
-    dailyGoal: 10,
+    ttsSpeed: 1.0,
     autoPlay: false,
   })
   const [showReset, setShowReset] = useState(false)
   const [resetDone, setResetDone] = useState(false)
+  const [importStatus, setImportStatus] = useState<"idle" | "success" | "error">("idle")
+  const [importMessage, setImportMessage] = useState("")
 
   useEffect(() => {
     setSettings(getSettings())
@@ -40,6 +48,54 @@ export function SettingsView() {
     setShowReset(false)
     setResetDone(true)
     setTimeout(() => setResetDone(false), 3000)
+  }, [])
+
+  const handleExport = useCallback(() => {
+    const backup = exportAllData()
+    const json = JSON.stringify(backup, null, 2)
+    const blob = new Blob([json], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `gridlang-backup-${new Date().toISOString().split("T")[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, [])
+
+  const handleImport = useCallback(() => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = ".json"
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target?.result as string) as GridLangBackup
+          importAllData(data)
+          setImportStatus("success")
+          setImportMessage("Data imported successfully. Reload to see changes.")
+          setSettings(getSettings())
+          setTimeout(() => {
+            setImportStatus("idle")
+            setImportMessage("")
+          }, 4000)
+        } catch {
+          setImportStatus("error")
+          setImportMessage("Invalid backup file. Please use a valid GridLang export.")
+          setTimeout(() => {
+            setImportStatus("idle")
+            setImportMessage("")
+          }, 4000)
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
   }, [])
 
   return (
@@ -160,6 +216,52 @@ export function SettingsView() {
             <p className="text-xs text-muted-foreground text-center">
               Grid: {settings.gridCols} x {settings.gridRows} = {settings.gridCols * settings.gridRows} cells per session
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Import / Export */}
+      <div className="flex flex-col gap-3">
+        <h3 className="text-sm font-medium text-foreground px-1">Backup & Restore</h3>
+        <div className="rounded-xl bg-card border border-border divide-y divide-border">
+          <div className="p-4 flex flex-col gap-3">
+            <p className="text-xs text-muted-foreground">
+              Export your progress, settings, and activity history as a JSON file.
+              Import a backup to restore your data on any device.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleExport}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export Data
+              </button>
+              <button
+                onClick={handleImport}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+              >
+                <Upload className="w-4 h-4" />
+                Import Data
+              </button>
+            </div>
+            {importStatus !== "idle" && (
+              <div
+                className={cn(
+                  "flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg",
+                  importStatus === "success"
+                    ? "bg-accent-green/10 text-accent-green"
+                    : "bg-destructive/10 text-destructive"
+                )}
+              >
+                {importStatus === "success" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                )}
+                {importMessage}
+              </div>
+            )}
           </div>
         </div>
       </div>
