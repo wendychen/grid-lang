@@ -46,7 +46,12 @@ export function ThemedPages() {
   const [themes, setThemes] = useState<ThemePage[]>([])
   const [selectedTheme, setSelectedTheme] = useState<ThemePage | null>(null)
   const [progressMap, setProgressMap] = useState<Record<string, SentenceProgress>>({})
-  const [settings, setSettings] = useState(getSettings())
+  const [settings, setSettings] = useState(() => ({
+    gridCols: 3,
+    gridRows: 4,
+    ttsSpeed: 1.0,
+    autoPlay: false,
+  }))
 
   useEffect(() => {
     const allThemes = getAllThemes()

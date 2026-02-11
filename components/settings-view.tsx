@@ -7,7 +7,14 @@ import { Volume2, RotateCw, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function SettingsView() {
-  const [settings, setSettings] = useState<AppSettings>(getSettings())
+  const [settings, setSettings] = useState<AppSettings>({
+    gridCols: 3,
+    gridRows: 4,
+    ttsSpeed: 0.85,
+    showTranslation: true,
+    dailyGoal: 10,
+    autoPlay: false,
+  })
   const [showReset, setShowReset] = useState(false)
   const [resetDone, setResetDone] = useState(false)
 

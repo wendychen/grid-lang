@@ -20,8 +20,18 @@ export function TodaysGrid() {
   const [queue, setQueue] = useState<string[]>([])
   const [sentences, setSentences] = useState<Sentence[]>([])
   const [progressMap, setProgressMap] = useState<Record<string, SentenceProgress>>({})
-  const [settings, setSettings] = useState(getSettings())
-  const [streak, setStreak] = useState(getStreakData())
+  const [settings, setSettings] = useState(() => ({
+    gridCols: 3,
+    gridRows: 4,
+    ttsSpeed: 1.0,
+    autoPlay: false,
+  }))
+  const [streak, setStreak] = useState(() => ({
+    currentStreak: 0,
+    longestStreak: 0,
+    lastPracticeDate: null as string | null,
+    practiceDays: [] as string[],
+  }))
   const [practiced, setPracticed] = useState(0)
   const [pushedCount, setPushedCount] = useState(0)
 
