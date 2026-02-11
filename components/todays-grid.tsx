@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { SentenceCell } from "@/components/sentence-cell"
+import { SentenceCell, isSentenceLong } from "@/components/sentence-cell"
 import { getAllSentences, type Sentence } from "@/lib/sentences"
 import {
   getTodaysQueue,
@@ -141,16 +141,12 @@ export function TodaysGrid() {
 
       {/* Grid */}
       {queue.length > 0 ? (
-        <div
-          className="grid gap-2"
-          style={{
-            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          }}
-        >
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
           {queue.map((id) => {
             const sentence = sentenceMap.get(id)
             if (!sentence) return null
             const progress = progressMap[id] || getProgress(id)
+            const wide = isSentenceLong(sentence.german)
             return (
               <SentenceCell
                 key={id}
@@ -159,6 +155,7 @@ export function TodaysGrid() {
                 ttsSpeed={settings.ttsSpeed}
                 onPractice={handlePractice}
                 onListen={handleListen}
+                wide={wide}
               />
             )
           })}

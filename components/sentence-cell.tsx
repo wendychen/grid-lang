@@ -9,15 +9,21 @@ import { speakGerman } from "@/lib/tts"
 import type { Sentence } from "@/lib/sentences"
 import { cn } from "@/lib/utils"
 
+// Sentences > 30 chars are considered "long" and should span 2 grid columns
+export function isSentenceLong(german: string): boolean {
+  return german.length > 30
+}
+
 interface SentenceCellProps {
   sentence: Sentence
   progress: SentenceProgress
   ttsSpeed: number
   onPractice: (id: string) => void
   onListen: (id: string) => void
+  wide?: boolean
 }
 
-export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen }: SentenceCellProps) {
+export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, wide }: SentenceCellProps) {
   const [expanded, setExpanded] = useState(false)
   const [speaking, setSpeaking] = useState(false)
 
@@ -65,7 +71,8 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
         "relative rounded-lg border transition-all duration-200 cursor-pointer select-none",
         "hover:shadow-md active:scale-[0.98]",
         colorClass,
-        expanded && "ring-2 ring-primary/30 shadow-lg"
+        expanded && "ring-2 ring-primary/30 shadow-lg",
+        wide && "col-span-2"
       )}
       onClick={handleToggle}
       role="button"
@@ -87,13 +94,13 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
       )}
 
       {/* Compact View */}
-      <div className="relative z-10 p-3 flex items-start justify-between gap-2">
+      <div className={cn("relative z-10 p-3.5 flex items-start justify-between gap-3", !expanded && progress.reps > 0 && "pb-5")}>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm leading-tight truncate text-cell-foreground">
+          <p className="font-semibold text-sm leading-snug text-cell-foreground text-pretty">
             {sentence.german}
           </p>
           {!expanded && (
-            <p className="text-xs text-cell-muted mt-0.5 truncate">
+            <p className="text-xs text-cell-muted mt-1.5 leading-relaxed">
               {sentence.english}
             </p>
           )}
@@ -144,11 +151,11 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
 
       {/* Reps indicator dots */}
       {progress.reps > 0 && !expanded && (
-        <div className="absolute bottom-1 left-3 flex gap-0.5">
+        <div className="absolute bottom-1.5 left-3.5 flex gap-0.5">
           {Array.from({ length: Math.min(progress.reps, 5) }).map((_, i) => (
             <div
               key={i}
-              className="w-1 h-1 rounded-full bg-current opacity-40"
+              className="w-1.5 h-1.5 rounded-full bg-current opacity-30"
             />
           ))}
         </div>

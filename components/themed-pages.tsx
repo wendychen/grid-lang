@@ -3,7 +3,7 @@
 import React from "react"
 
 import { useState, useCallback, useEffect } from "react"
-import { SentenceCell } from "@/components/sentence-cell"
+import { SentenceCell, isSentenceLong } from "@/components/sentence-cell"
 import { getAllThemes, type ThemePage } from "@/lib/sentences"
 import {
   getProgress,
@@ -127,14 +127,10 @@ export function ThemedPages() {
         </div>
 
         {/* Grid */}
-        <div
-          className="grid gap-2"
-          style={{
-            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          }}
-        >
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
           {selectedTheme.sentences.map((sentence) => {
             const progress = progressMap[sentence.id] || getProgress(sentence.id)
+            const wide = isSentenceLong(sentence.german)
             return (
               <SentenceCell
                 key={sentence.id}
@@ -143,6 +139,7 @@ export function ThemedPages() {
                 ttsSpeed={settings.ttsSpeed}
                 onPractice={handlePractice}
                 onListen={handleListen}
+                wide={wide}
               />
             )
           })}
