@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { SentenceCell, isSentenceLong, SECRET_SENTENCE_ID } from "@/components/sentence-cell"
+import { SentenceCell, isSentenceLong } from "@/components/sentence-cell"
 import { getAllSentences, type Sentence } from "@/lib/sentences"
 import {
   getTodaysQueue,
@@ -34,6 +34,13 @@ export function TodaysGrid() {
   }))
   const [practiced, setPracticed] = useState(0)
   const [pushedCount, setPushedCount] = useState(0)
+  const [secretId, setSecretId] = useState<string | null>(null)
+
+  const pickRandomSecret = useCallback((ids: string[], excludeId?: string | null) => {
+    const candidates = excludeId ? ids.filter((id) => id !== excludeId) : ids
+    if (candidates.length === 0) return null
+    return candidates[Math.floor(Math.random() * candidates.length)]
+  }, [])
 
   const refreshData = useCallback(() => {
     const allSentences = getAllSentences()
@@ -50,12 +57,15 @@ export function TodaysGrid() {
     setSettings(currentSettings)
     setStreak(getStreakData())
 
+    // Place the cat in a random cell
+    setSecretId((prev) => prev || pickRandomSecret(todaysQueue))
+
     const newProgressMap: Record<string, SentenceProgress> = {}
     for (const id of todaysQueue) {
       newProgressMap[id] = getProgress(id)
     }
     setProgressMap(newProgressMap)
-  }, [])
+  }, [pickRandomSecret])
 
   useEffect(() => {
     refreshData()
@@ -91,6 +101,10 @@ export function TodaysGrid() {
       [id]: { ...prev[id], listens: (prev[id]?.listens || 0) + 1 },
     }))
   }, [])
+
+  const handleSecretFound = useCallback(() => {
+    setSecretId((prev) => pickRandomSecret(queue, prev))
+  }, [queue, pickRandomSecret])
 
   const sentenceMap = new Map(sentences.map((s) => [s.id, s]))
 
@@ -156,7 +170,8 @@ export function TodaysGrid() {
                 onPractice={handlePractice}
                 onListen={handleListen}
                 wide={wide}
-                secretImage={id === SECRET_SENTENCE_ID ? "/images/secret-cat.png" : undefined}
+                secretImage={id === secretId ? "/images/secret-cat.png" : undefined}
+                onSecretFound={id === secretId ? handleSecretFound : undefined}
               />
             )
           })}

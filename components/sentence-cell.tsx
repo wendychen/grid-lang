@@ -14,9 +14,6 @@ export function isSentenceLong(german: string): boolean {
   return german.length > 30
 }
 
-// The secret sentence ID that has a hidden cat
-export const SECRET_SENTENCE_ID = "page2-s10"
-
 interface SentenceCellProps {
   sentence: Sentence
   progress: SentenceProgress
@@ -25,9 +22,10 @@ interface SentenceCellProps {
   onListen: (id: string) => void
   wide?: boolean
   secretImage?: string
+  onSecretFound?: () => void
 }
 
-export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, wide, secretImage }: SentenceCellProps) {
+export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, wide, secretImage, onSecretFound }: SentenceCellProps) {
   const [expanded, setExpanded] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
@@ -68,12 +66,15 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
       if (secretImage) {
         setShowSecret(true)
         setExpanded(false)
-        setTimeout(() => setShowSecret(false), 3000)
+        setTimeout(() => {
+          setShowSecret(false)
+          onSecretFound?.()
+        }, 3000)
       } else {
         setExpanded(false)
       }
     },
-    [sentence.id, onPractice, secretImage]
+    [sentence.id, onPractice, secretImage, onSecretFound]
   )
 
   return (

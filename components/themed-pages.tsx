@@ -3,7 +3,7 @@
 import React from "react"
 
 import { useState, useCallback, useEffect } from "react"
-import { SentenceCell, isSentenceLong, SECRET_SENTENCE_ID } from "@/components/sentence-cell"
+import { SentenceCell, isSentenceLong } from "@/components/sentence-cell"
 import { getAllThemes, type ThemePage } from "@/lib/sentences"
 import {
   getProgress,
@@ -52,6 +52,13 @@ export function ThemedPages() {
     ttsSpeed: 1.0,
     autoPlay: false,
   }))
+  const [secretId, setSecretId] = useState<string | null>(null)
+
+  const pickRandomSecret = useCallback((ids: string[], excludeId?: string | null) => {
+    const candidates = excludeId ? ids.filter((id) => id !== excludeId) : ids
+    if (candidates.length === 0) return null
+    return candidates[Math.floor(Math.random() * candidates.length)]
+  }, [])
 
   useEffect(() => {
     const allThemes = getAllThemes()
@@ -71,8 +78,10 @@ export function ThemedPages() {
     (theme: ThemePage) => {
       setSelectedTheme(theme)
       loadThemeProgress(theme)
+      const ids = theme.sentences.map((s) => s.id)
+      setSecretId(pickRandomSecret(ids))
     },
-    [loadThemeProgress]
+    [loadThemeProgress, pickRandomSecret]
   )
 
   const handlePractice = useCallback(
@@ -92,6 +101,12 @@ export function ThemedPages() {
       [id]: { ...prev[id], listens: (prev[id]?.listens || 0) + 1 },
     }))
   }, [])
+
+  const handleSecretFound = useCallback(() => {
+    if (!selectedTheme) return
+    const ids = selectedTheme.sentences.map((s) => s.id)
+    setSecretId((prev) => pickRandomSecret(ids, prev))
+  }, [selectedTheme, pickRandomSecret])
 
   // Theme detail view
   if (selectedTheme) {
@@ -140,7 +155,8 @@ export function ThemedPages() {
                 onPractice={handlePractice}
                 onListen={handleListen}
                 wide={wide}
-                secretImage={sentence.id === SECRET_SENTENCE_ID ? "/images/secret-cat.png" : undefined}
+                secretImage={sentence.id === secretId ? "/images/secret-cat.png" : undefined}
+                onSecretFound={sentence.id === secretId ? handleSecretFound : undefined}
               />
             )
           })}
