@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { SentenceCell, isSentenceLong } from "@/components/sentence-cell"
+import { SentenceCell, isSentenceLong, SECRET_SENTENCE_ID } from "@/components/sentence-cell"
 import { getAllSentences, type Sentence } from "@/lib/sentences"
 import {
   getTodaysQueue,
@@ -156,6 +156,7 @@ export function TodaysGrid() {
                 onPractice={handlePractice}
                 onListen={handleListen}
                 wide={wide}
+                secretImage={id === SECRET_SENTENCE_ID ? "/images/secret-cat.png" : undefined}
               />
             )
           })}

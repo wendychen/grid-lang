@@ -14,6 +14,9 @@ export function isSentenceLong(german: string): boolean {
   return german.length > 30
 }
 
+// The secret sentence ID that has a hidden cat
+export const SECRET_SENTENCE_ID = "page2-s10"
+
 interface SentenceCellProps {
   sentence: Sentence
   progress: SentenceProgress
@@ -21,11 +24,13 @@ interface SentenceCellProps {
   onPractice: (id: string) => void
   onListen: (id: string) => void
   wide?: boolean
+  secretImage?: string
 }
 
-export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, wide }: SentenceCellProps) {
+export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, wide, secretImage }: SentenceCellProps) {
   const [expanded, setExpanded] = useState(false)
   const [speaking, setSpeaking] = useState(false)
+  const [showSecret, setShowSecret] = useState(false)
 
   const colorClass = getColorClass(progress.reps)
 
@@ -60,9 +65,15 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
     (e: React.MouseEvent) => {
       e.stopPropagation()
       onPractice(sentence.id)
-      setExpanded(false)
+      if (secretImage) {
+        setShowSecret(true)
+        setExpanded(false)
+        setTimeout(() => setShowSecret(false), 3000)
+      } else {
+        setExpanded(false)
+      }
     },
-    [sentence.id, onPractice]
+    [sentence.id, onPractice, secretImage]
   )
 
   return (
@@ -91,6 +102,22 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
           className="absolute inset-0 rounded-lg pointer-events-none z-0"
           style={{ backgroundColor: `rgba(0, 0, 0, ${listenIntensity})` }}
         />
+      )}
+
+      {/* Secret image reveal */}
+      {showSecret && secretImage && (
+        <div className="absolute inset-0 z-30 rounded-lg overflow-hidden flex items-center justify-center bg-background animate-in zoom-in-50 fade-in duration-300">
+          <img
+            src={secretImage}
+            alt="Secret reward"
+            className="w-full h-full object-contain p-2"
+          />
+          <div className="absolute bottom-1 left-0 right-0 text-center">
+            <span className="text-[10px] font-medium text-muted-foreground bg-background/80 px-2 py-0.5 rounded-full">
+              You found me!
+            </span>
+          </div>
+        </div>
       )}
 
       {/* Compact View */}
