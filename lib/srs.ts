@@ -49,6 +49,35 @@ function getToday(): string {
   return new Date().toISOString().split("T")[0]
 }
 
+// Simple seeded PRNG (mulberry32) for deterministic daily shuffles
+function seededRng(seed: number): () => number {
+  return () => {
+    seed |= 0
+    seed = (seed + 0x6d2b79f5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function dateToSeed(dateStr: string): number {
+  let hash = 0
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = (hash * 31 + dateStr.charCodeAt(i)) | 0
+  }
+  return hash
+}
+
+function shuffleWithSeed<T>(arr: T[], seed: number): T[] {
+  const shuffled = [...arr]
+  const rng = seededRng(seed)
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 function daysBetween(a: string, b: string): number {
   const da = new Date(a)
   const db = new Date(b)
@@ -168,6 +197,7 @@ export function recordListen(id: string): void {
 
 export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12): string[] {
   const today = getToday()
+  const seed = dateToSeed(today)
   const allProg = getAllProgress()
 
   // 0. Start with pushed sentences from themed pages (highest priority)
@@ -196,24 +226,37 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
     }
   }
 
-  // Sort by due date (oldest first), then position
+  // Sort by due date (oldest first), then shuffle within same due date for variety
   dueReviews.sort((a, b) => {
     if (a.dueDate !== b.dueDate) return a.dueDate < b.dueDate ? -1 : 1
-    return a.position - b.position
+    return 0
   })
 
+  // Group by dueDate and shuffle each group
+  const dueGroups = new Map<string, typeof dueReviews>()
+  for (const r of dueReviews) {
+    const group = dueGroups.get(r.dueDate) || []
+    group.push(r)
+    dueGroups.set(r.dueDate, group)
+  }
+  const shuffledDue: typeof dueReviews = []
+  for (const [, group] of dueGroups) {
+    shuffledDue.push(...shuffleWithSeed(group, seed))
+  }
+
   const remaining = maxItems - queue.length
-  for (const r of dueReviews.slice(0, Math.min(8, remaining))) {
+  for (const r of shuffledDue.slice(0, Math.min(8, remaining))) {
     queue.push(r.id)
     inQueue.add(r.id)
   }
 
-  // 2. Add new sentences if needed
+  // 2. Fill remaining slots with random unlearned sentences (shuffled by daily seed)
   if (queue.length < maxItems) {
     const unlearned = allSentenceIds.filter((id) => !learned.has(id) && !inQueue.has(id))
+    const shuffledUnlearned = shuffleWithSeed(unlearned, seed)
     const needed = maxItems - queue.length
-    for (let i = 0; i < Math.min(needed, unlearned.length); i++) {
-      queue.push(unlearned[i])
+    for (let i = 0; i < Math.min(needed, shuffledUnlearned.length); i++) {
+      queue.push(shuffledUnlearned[i])
     }
   }
 
