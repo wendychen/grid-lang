@@ -237,7 +237,7 @@ export function TodaysGrid() {
           <span className="text-xs text-muted-foreground">Lv 7</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm bg-[hsl(80, 60%, 48%)]" />
+          <div className="w-3 h-3 rounded-sm cell-mastered bg-[hsl(80, 60%, 48%)]" />
           <span className="text-xs text-muted-foreground">Lv 8</span>
         </div>
         <div className="flex items-center gap-1">
