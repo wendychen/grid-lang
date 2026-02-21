@@ -188,6 +188,19 @@ export function TodaysGrid() {
         </div>
       )}
 
+      {/* const levels = [
+      { label: "New",  min: 0,  max: 0,  color: "hsl(215, 10%, 80%)" },
+      { label: "Lv 1", min: 1,  max: 1,  color: "hsl(200, 80%, 78%)" },
+      { label: "Lv 2", min: 2,  max: 3,  color: "hsl(200, 80%, 68%)" },
+      { label: "Lv 3", min: 4,  max: 5,  color: "hsl(200, 65%, 58%)" },
+      { label: "Lv 4", min: 6,  max: 8,  color: "hsl(190, 60%, 50%)" },
+      { label: "Lv 5", min: 9,  max: 12, color: "hsl(170, 55%, 46%)" },
+      { label: "Lv 6", min: 13, max: 16, color: "hsl(152, 55%, 46%)" },
+      { label: "Lv 7", min: 17, max: 20, color: "hsl(142, 55%, 45%)" },
+      { label: "Lv 8", min: 21, max: 30, color: "hsl(80, 60%, 48%)" },
+      { label: "Lv 9", min: 31, max: Infinity, color: "hsl(45, 90%, 50%)" },
+    ] */}
+
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-3 px-1 pt-2 border-t border-border">
         <span className="text-xs text-muted-foreground">Progress:</span>
@@ -224,7 +237,7 @@ export function TodaysGrid() {
           <span className="text-xs text-muted-foreground">Lv 7</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <div className="w-3 h-3 rounded-sm bg-[hsl(80, 60%, 48%)]" />
           <span className="text-xs text-muted-foreground">Lv 8</span>
         </div>
         <div className="flex items-center gap-1">
