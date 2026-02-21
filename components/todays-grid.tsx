@@ -197,19 +197,39 @@ export function TodaysGrid() {
         </div>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-sm cell-started" />
-          <span className="text-xs text-muted-foreground">Started</span>
+          <span className="text-xs text-muted-foreground">Lv 1</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-sm cell-building" />
-          <span className="text-xs text-muted-foreground">Building</span>
+          <span className="text-xs text-muted-foreground">Lv 2</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-sm cell-strong" />
-          <span className="text-xs text-muted-foreground">Strong</span>
+          <span className="text-xs text-muted-foreground">Lv 3</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-sm cell-mastered" />
-          <span className="text-xs text-muted-foreground">Mastered</span>
+          <span className="text-xs text-muted-foreground">Lv 4</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <span className="text-xs text-muted-foreground">Lv 5</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <span className="text-xs text-muted-foreground">Lv 6</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <span className="text-xs text-muted-foreground">Lv 7</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <span className="text-xs text-muted-foreground">Lv 8</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <span className="text-xs text-muted-foreground">Lv 9</span>
         </div>
       </div>
     </div>
