@@ -73,7 +73,7 @@ function shuffleWithSeed<T>(arr: T[], seed: number): T[] {
   const rng = seededRng(seed)
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
   return shuffled
 }
@@ -154,7 +154,7 @@ export function practiceSentence(id: string): SentenceProgress {
 
   // Update interval using SRS
   prog.interval = Math.min(365, Math.max(1, Math.round(prog.interval * prog.ease)))
-  
+
   // Set next due date
   const nextDue = new Date(today)
   nextDue.setDate(nextDue.getDate() + prog.interval)
@@ -267,27 +267,27 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
 
 export function getColorForReps(reps: number): string {
   if (reps === 0) return "var(--cell-new)"
-  if (reps === 1) return "var(--cell-lv1)"
-  if (reps <= 3) return "var(--cell-lv2)"
-  if (reps <= 5) return "var(--cell-lv3)"
-  if (reps <= 8) return "var(--cell-lv4)"
-  if (reps <= 12) return "var(--cell-lv5)"
-  if (reps <= 16) return "var(--cell-lv6)"
-  if (reps <= 20) return "var(--cell-lv7)"
-  if (reps <= 30) return "var(--cell-lv8)"
+  if (reps === 10) return "var(--cell-lv1)"
+  if (reps <= 20) return "var(--cell-lv2)"
+  if (reps <= 30) return "var(--cell-lv3)"
+  if (reps <= 40) return "var(--cell-lv4)"
+  if (reps <= 50) return "var(--cell-lv5)"
+  if (reps <= 60) return "var(--cell-lv6)"
+  if (reps <= 70) return "var(--cell-lv7)"
+  if (reps <= 80) return "var(--cell-lv8)"
   return "var(--cell-lv9)"
 }
 
 export function getColorClass(reps: number): string {
   if (reps === 0) return "cell-new"
-  if (reps === 1) return "cell-lv1"
-  if (reps <= 3) return "cell-lv2"
-  if (reps <= 5) return "cell-lv3"
-  if (reps <= 8) return "cell-lv4"
-  if (reps <= 12) return "cell-lv5"
-  if (reps <= 16) return "cell-lv6"
-  if (reps <= 20) return "cell-lv7"
-  if (reps <= 30) return "cell-lv8"
+  if (reps === 10) return "cell-lv1"
+  if (reps <= 20) return "cell-lv2"
+  if (reps <= 30) return "cell-lv3"
+  if (reps <= 40) return "cell-lv4"
+  if (reps <= 50) return "cell-lv5"
+  if (reps <= 60) return "cell-lv6"
+  if (reps <= 70) return "cell-lv7"
+  if (reps <= 80) return "cell-lv8"
   return "cell-lv9"
 }
 
