@@ -34,7 +34,8 @@
 
     /* Cell progress colors */
     --cell-new: 215 10% 80%;
-    --cell-lv1: 200 80% 78%;
+    --cell-lv1: 215 10% 80%;
+    /* --cell-lv1: 200 80% 78%; */
     --cell-lv2: 200 80% 68%;
     --cell-lv3: 200 65% 58%;
     --cell-lv4: 190 60% 50%;
