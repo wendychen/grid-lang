@@ -256,31 +256,35 @@ export function ProgressView() {
     let totalListens = 0
     let mastered = 0
 
-    // Familiarity buckets
-    let newCount = 0
-    let startedCount = 0
-    let buildingCount = 0
-    let strongCount = 0
-    let masteredCount = 0
+    // 10-level familiarity buckets
+    const levels = [
+      { label: "New",  min: 0,  max: 0,  color: "hsl(215, 10%, 80%)" },
+      { label: "Lv 1", min: 1,  max: 1,  color: "hsl(200, 80%, 78%)" },
+      { label: "Lv 2", min: 2,  max: 3,  color: "hsl(200, 80%, 68%)" },
+      { label: "Lv 3", min: 4,  max: 5,  color: "hsl(200, 65%, 58%)" },
+      { label: "Lv 4", min: 6,  max: 8,  color: "hsl(190, 60%, 50%)" },
+      { label: "Lv 5", min: 9,  max: 12, color: "hsl(170, 55%, 46%)" },
+      { label: "Lv 6", min: 13, max: 16, color: "hsl(152, 55%, 46%)" },
+      { label: "Lv 7", min: 17, max: 20, color: "hsl(142, 55%, 45%)" },
+      { label: "Lv 8", min: 21, max: 30, color: "hsl(80, 60%, 48%)" },
+      { label: "Lv 9", min: 31, max: Infinity, color: "hsl(45, 90%, 50%)" },
+    ]
+    const bucketCounts = levels.map(() => 0)
 
     for (const s of allSentences) {
       const prog = allProgress[s.id]
-      if (prog && prog.reps > 0) {
+      const reps = prog?.reps ?? 0
+      if (reps > 0) {
         learned++
         totalReps += prog.reps
         totalListens += prog.listens
-        if (prog.reps >= 20) {
-          mastered++
-          masteredCount++
-        } else if (prog.reps >= 10) {
-          strongCount++
-        } else if (prog.reps >= 2) {
-          buildingCount++
-        } else {
-          startedCount++
+        if (reps >= 20) mastered++
+      }
+      for (let i = levels.length - 1; i >= 0; i--) {
+        if (reps >= levels[i].min && reps <= levels[i].max) {
+          bucketCounts[i]++
+          break
         }
-      } else {
-        newCount++
       }
     }
 
@@ -292,13 +296,9 @@ export function ProgressView() {
       mastered,
     })
 
-    setFamiliarityBuckets([
-      { label: "New", count: newCount, color: "hsl(215, 10%, 80%)" },
-      { label: "Started", count: startedCount, color: "hsl(200, 80%, 72%)" },
-      { label: "Building", count: buildingCount, color: "hsl(200, 65%, 55%)" },
-      { label: "Strong", count: strongCount, color: "hsl(142, 55%, 50%)" },
-      { label: "Mastered", count: masteredCount, color: "hsl(45, 90%, 50%)" },
-    ])
+    setFamiliarityBuckets(
+      levels.map((lvl, i) => ({ label: lvl.label, count: bucketCounts[i], color: lvl.color }))
+    )
 
     // Load 365-day activity
     setActivity(getActivityForRange(365))
