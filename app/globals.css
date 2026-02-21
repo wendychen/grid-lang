@@ -141,56 +141,56 @@
 
   .cell-lv2 {
     background-color: hsl(var(--cell-lv2));
-    --cell-foreground-color: hsl(200 90% 10%);
+    --cell-foreground-color: hsl(200 80% 68%);
     --cell-muted-color: hsl(200 50% 25%);
     color: var(--cell-foreground-color);
   }
 
   .cell-lv3 {
     background-color: hsl(var(--cell-lv3));
-    --cell-foreground-color: hsl(142 80% 8%);
+    --cell-foreground-color: hsl(200 65% 58%);
     --cell-muted-color: hsl(142 30% 22%);
     color: var(--cell-foreground-color);
   }
 
   .cell-lv4 {
     background-color: hsl(var(--cell-lv4));
-    --cell-foreground-color: hsl(45 90% 8%);
+    --cell-foreground-color: hsl(190 60% 50%);
     --cell-muted-color: hsl(45 50% 22%);
     color: var(--cell-foreground-color);
   }
 
   .cell-lv5 {
     background-color: hsl(var(--cell-lv5));
-    --cell-foreground-color: hsl(45 90% 8%);
+    --cell-foreground-color: hsl(170 55% 46%);
     --cell-muted-color: hsl(45 50% 22%);
     color: var(--cell-foreground-color);
   }
 
   .cell-lv6 {
     background-color: hsl(var(--cell-lv6));
-    --cell-foreground-color: hsl(45 90% 8%);
+    --cell-foreground-color: hsl(152 55% 46%);
     --cell-muted-color: hsl(45 50% 22%);
     color: var(--cell-foreground-color);
   }
 
   .cell-lv7 {
     background-color: hsl(var(--cell-lv7));
-    --cell-foreground-color: hsl(45 90% 8%);
+    --cell-foreground-color: hsl(142 55% 45%);
     --cell-muted-color: hsl(45 50% 22%);
     color: var(--cell-foreground-color);
   }
 
   .cell-lv8 {
     background-color: hsl(var(--cell-lv8));
-    --cell-foreground-color: hsl(45 90% 8%);
+    --cell-foreground-color: hsl(80 60% 48%);
     --cell-muted-color: hsl(45 50% 22%);
     color: var(--cell-foreground-color);
   }
 
   .cell-lv9 {
     background-color: hsl(var(--cell-lv9));
-    --cell-foreground-color: hsl(45 90% 8%);
+    --cell-foreground-color: hsl(45 90% 50%);
     --cell-muted-color: hsl(45 50% 22%);
     color: var(--cell-foreground-color);
   }
