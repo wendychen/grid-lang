@@ -267,18 +267,28 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
 
 export function getColorForReps(reps: number): string {
   if (reps === 0) return "var(--cell-new)"
-  if (reps === 1) return "var(--cell-started)"
-  if (reps < 10) return "var(--cell-building)"
-  if (reps < 20) return "var(--cell-strong)"
-  return "var(--cell-mastered)"
+  if (reps === 1) return "var(--cell-lv1)"
+  if (reps <= 3) return "var(--cell-lv2)"
+  if (reps <= 5) return "var(--cell-lv3)"
+  if (reps <= 8) return "var(--cell-lv4)"
+  if (reps <= 12) return "var(--cell-lv5)"
+  if (reps <= 16) return "var(--cell-lv6)"
+  if (reps <= 20) return "var(--cell-lv7)"
+  if (reps <= 30) return "var(--cell-lv8)"
+  return "var(--cell-lv9)"
 }
 
 export function getColorClass(reps: number): string {
   if (reps === 0) return "cell-new"
-  if (reps === 1) return "cell-started"
-  if (reps < 10) return "cell-building"
-  if (reps < 20) return "cell-strong"
-  return "cell-mastered"
+  if (reps === 1) return "cell-lv1"
+  if (reps <= 3) return "cell-lv2"
+  if (reps <= 5) return "cell-lv3"
+  if (reps <= 8) return "cell-lv4"
+  if (reps <= 12) return "cell-lv5"
+  if (reps <= 16) return "cell-lv6"
+  if (reps <= 20) return "cell-lv7"
+  if (reps <= 30) return "cell-lv8"
+  return "cell-lv9"
 }
 
 // ===== Settings =====
