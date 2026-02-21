@@ -188,18 +188,7 @@ export function TodaysGrid() {
         </div>
       )}
 
-      {/* const levels = [
-      { label: "New",  min: 0,  max: 0,  color: "hsl(215, 10%, 80%)" },
-      { label: "Lv 1", min: 1,  max: 1,  color: "hsl(200, 80%, 78%)" },
-      { label: "Lv 2", min: 2,  max: 3,  color: "hsl(200, 80%, 68%)" },
-      { label: "Lv 3", min: 4,  max: 5,  color: "hsl(200, 65%, 58%)" },
-      { label: "Lv 4", min: 6,  max: 8,  color: "hsl(190, 60%, 50%)" },
-      { label: "Lv 5", min: 9,  max: 12, color: "hsl(170, 55%, 46%)" },
-      { label: "Lv 6", min: 13, max: 16, color: "hsl(152, 55%, 46%)" },
-      { label: "Lv 7", min: 17, max: 20, color: "hsl(142, 55%, 45%)" },
-      { label: "Lv 8", min: 21, max: 30, color: "hsl(80, 60%, 48%)" },
-      { label: "Lv 9", min: 31, max: Infinity, color: "hsl(45, 90%, 50%)" },
-    ] */}
+
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-3 px-1 pt-2 border-t border-border">
@@ -209,39 +198,39 @@ export function TodaysGrid() {
           <span className="text-xs text-muted-foreground">New</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-started" />
+          <div className="w-3 h-3 rounded-sm cell-lv1" />
           <span className="text-xs text-muted-foreground">Lv 1</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-building" />
+          <div className="w-3 h-3 rounded-sm cell-lv2" />
           <span className="text-xs text-muted-foreground">Lv 2</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-strong" />
+          <div className="w-3 h-3 rounded-sm cell-lv3" />
           <span className="text-xs text-muted-foreground">Lv 3</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <div className="w-3 h-3 rounded-sm cell-lv4" />
           <span className="text-xs text-muted-foreground">Lv 4</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <div className="w-3 h-3 rounded-sm cell-lv5" />
           <span className="text-xs text-muted-foreground">Lv 5</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <div className="w-3 h-3 rounded-sm cell-lv6" />
           <span className="text-xs text-muted-foreground">Lv 6</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <div className="w-3 h-3 rounded-sm cell-lv7" />
           <span className="text-xs text-muted-foreground">Lv 7</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-mastered bg-[hsl(80, 60%, 48%)]" />
+          <div className="w-3 h-3 rounded-sm cell-lv8 bg-[hsl(80, 60%, 48%)]" />
           <span className="text-xs text-muted-foreground">Lv 8</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-sm cell-mastered" />
+          <div className="w-3 h-3 rounded-sm cell-lv9" />
           <span className="text-xs text-muted-foreground">Lv 9</span>
         </div>
       </div>

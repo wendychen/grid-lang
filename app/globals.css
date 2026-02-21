@@ -31,12 +31,18 @@
     --ring: 215 80% 52%;
     --radius: 0.625rem;
 
+
     /* Cell progress colors */
-    --cell-new: 215 10% 94%;
-    --cell-started: 200 80% 88%;
-    --cell-building: 200 65% 72%;
-    --cell-strong: 142 55% 55%;
-    --cell-mastered: 45 90% 55%;
+    --cell-new: 215 10% 80%;
+    --cell-lv1: 200 80% 78%;
+    --cell-lv2: 200 80% 68%;
+    --cell-lv3: 200% 65% 58%;
+    --cell-lv4: 190% 60% 50%;
+    --cell-lv5: 170% 55% 46%;
+    --cell-lv6: 152% 55% 46%;
+    --cell-lv7: 142% 55% 45%;
+    --cell-lv8: 80% 60% 48%;
+    --cell-lv9: 45 90% 50%;
 
     /* Accent colors */
     --accent-orange: 25 95% 55%;
@@ -111,6 +117,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -124,24 +131,28 @@
     --cell-muted-color: hsl(var(--muted-foreground));
     color: var(--cell-foreground-color);
   }
+
   .cell-started {
     background-color: hsl(var(--cell-started));
     --cell-foreground-color: hsl(215 80% 20%);
     --cell-muted-color: hsl(215 40% 35%);
     color: var(--cell-foreground-color);
   }
+
   .cell-building {
     background-color: hsl(var(--cell-building));
     --cell-foreground-color: hsl(200 90% 10%);
     --cell-muted-color: hsl(200 50% 25%);
     color: var(--cell-foreground-color);
   }
+
   .cell-strong {
     background-color: hsl(var(--cell-strong));
     --cell-foreground-color: hsl(142 80% 8%);
     --cell-muted-color: hsl(142 30% 22%);
     color: var(--cell-foreground-color);
   }
+
   .cell-mastered {
     background-color: hsl(var(--cell-mastered));
     --cell-foreground-color: hsl(45 90% 8%);
@@ -152,6 +163,7 @@
   .text-cell-foreground {
     color: var(--cell-foreground-color, hsl(var(--foreground)));
   }
+
   .text-cell-muted {
     color: var(--cell-muted-color, hsl(var(--muted-foreground)));
   }
@@ -159,15 +171,19 @@
   .text-accent-orange {
     color: hsl(var(--accent-orange));
   }
+
   .text-accent-blue {
     color: hsl(var(--accent-blue));
   }
+
   .text-accent-green {
     color: hsl(var(--accent-green));
   }
+
   .bg-accent-green\/10 {
     background-color: hsl(var(--accent-green) / 0.1);
   }
+
   .bg-primary\/20 {
     background-color: hsl(var(--primary) / 0.2);
   }
@@ -178,12 +194,15 @@
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--border)) transparent;
 }
+
 .scrollbar-thin::-webkit-scrollbar {
   height: 4px;
 }
+
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background-color: hsl(var(--border));
   border-radius: 2px;
