@@ -2,10 +2,10 @@
 
 import React from "react"
 
-import { LayoutGrid, BookOpen, BarChart3, Settings } from "lucide-react"
+import { LayoutGrid, BookOpen, BarChart3, Settings, Share2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export type AppView = "today" | "themes" | "progress" | "settings"
+export type AppView = "today" | "themes" | "graph" | "progress" | "settings"
 
 interface BottomNavProps {
   active: AppView
@@ -15,6 +15,7 @@ interface BottomNavProps {
 const NAV_ITEMS: { id: AppView; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "today", label: "Today", icon: LayoutGrid },
   { id: "themes", label: "Themes", icon: BookOpen },
+  { id: "graph", label: "Graph", icon: Share2 },
   { id: "progress", label: "Progress", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings },
 ]

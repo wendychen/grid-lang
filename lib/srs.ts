@@ -360,6 +360,8 @@ export function resetAllProgress(): void {
   localStorage.removeItem(STREAK_KEY)
   localStorage.removeItem(PUSHED_KEY)
   localStorage.removeItem(ACTIVITY_KEY)
+  localStorage.removeItem("gridlang_graph_edges")
+  localStorage.removeItem("gridlang_custom_sentences")
 }
 
 // ===== Daily Activity Log =====
@@ -434,9 +436,21 @@ export interface GridLangBackup {
   streak: StreakData
   activity: Record<string, DailyActivity>
   pushed: string[]
+  graphEdges?: unknown[]
+  customSentences?: unknown[]
 }
 
 export function exportAllData(): GridLangBackup {
+  // Read graph data directly from localStorage to avoid circular imports
+  let graphEdges: unknown[] = []
+  let customSentences: unknown[] = []
+  try {
+    const edgesRaw = localStorage.getItem("gridlang_graph_edges")
+    if (edgesRaw) graphEdges = JSON.parse(edgesRaw)
+    const customRaw = localStorage.getItem("gridlang_custom_sentences")
+    if (customRaw) customSentences = JSON.parse(customRaw)
+  } catch { /* ignore */ }
+
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -445,6 +459,8 @@ export function exportAllData(): GridLangBackup {
     streak: getStreakData(),
     activity: getAllActivity(),
     pushed: getPushedQueue(),
+    graphEdges,
+    customSentences,
   }
 }
 
@@ -467,6 +483,12 @@ export function importAllData(backup: GridLangBackup): void {
   }
   if (backup.pushed) {
     localStorage.setItem(PUSHED_KEY, JSON.stringify(backup.pushed))
+  }
+  if (backup.graphEdges) {
+    localStorage.setItem("gridlang_graph_edges", JSON.stringify(backup.graphEdges))
+  }
+  if (backup.customSentences) {
+    localStorage.setItem("gridlang_custom_sentences", JSON.stringify(backup.customSentences))
   }
 }
 
