@@ -5,6 +5,7 @@ import { BottomNav, type AppView } from "@/components/bottom-nav"
 import { TodaysGrid } from "@/components/todays-grid"
 import { ThemedPages } from "@/components/themed-pages"
 import { GraphView } from "@/components/graph-view"
+import { NotebookView } from "@/components/notebook-view"
 import { ProgressView } from "@/components/progress-view"
 import { SettingsView } from "@/components/settings-view"
 import { Languages } from "lucide-react"
@@ -27,6 +28,7 @@ export function AppShell() {
             {activeView === "today" && "Today's Practice"}
             {activeView === "themes" && "Themed Pages"}
             {activeView === "graph" && "Sentence Graph"}
+            {activeView === "notebook" && "Notebook"}
             {activeView === "progress" && "Your Progress"}
             {activeView === "settings" && "Settings"}
           </p>
@@ -38,6 +40,7 @@ export function AppShell() {
         {activeView === "today" && <TodaysGrid />}
         {activeView === "themes" && <ThemedPages />}
         {activeView === "graph" && <GraphView />}
+        {activeView === "notebook" && <NotebookView />}
         {activeView === "progress" && <ProgressView />}
         {activeView === "settings" && <SettingsView />}
       </main>
