@@ -362,6 +362,7 @@ export function resetAllProgress(): void {
   localStorage.removeItem(ACTIVITY_KEY)
   localStorage.removeItem("gridlang_graph_edges")
   localStorage.removeItem("gridlang_custom_sentences")
+  localStorage.removeItem("gridlang_notebook")
 }
 
 // ===== Daily Activity Log =====
@@ -438,17 +439,21 @@ export interface GridLangBackup {
   pushed: string[]
   graphEdges?: unknown[]
   customSentences?: unknown[]
+  notebook?: unknown
 }
 
 export function exportAllData(): GridLangBackup {
-  // Read graph data directly from localStorage to avoid circular imports
+  // Read graph and notebook data directly from localStorage to avoid circular imports
   let graphEdges: unknown[] = []
   let customSentences: unknown[] = []
+  let notebook: unknown = null
   try {
     const edgesRaw = localStorage.getItem("gridlang_graph_edges")
     if (edgesRaw) graphEdges = JSON.parse(edgesRaw)
     const customRaw = localStorage.getItem("gridlang_custom_sentences")
     if (customRaw) customSentences = JSON.parse(customRaw)
+    const notebookRaw = localStorage.getItem("gridlang_notebook")
+    if (notebookRaw) notebook = JSON.parse(notebookRaw)
   } catch { /* ignore */ }
 
   return {
@@ -461,6 +466,7 @@ export function exportAllData(): GridLangBackup {
     pushed: getPushedQueue(),
     graphEdges,
     customSentences,
+    notebook,
   }
 }
 
@@ -489,6 +495,9 @@ export function importAllData(backup: GridLangBackup): void {
   }
   if (backup.customSentences) {
     localStorage.setItem("gridlang_custom_sentences", JSON.stringify(backup.customSentences))
+  }
+  if (backup.notebook) {
+    localStorage.setItem("gridlang_notebook", JSON.stringify(backup.notebook))
   }
 }
 
