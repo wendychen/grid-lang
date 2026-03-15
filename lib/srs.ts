@@ -495,6 +495,9 @@ async function recordDailyActivityAsync(sentenceId: string, type: "practice" | "
 
   await db.activity.put(entry)
 
+  // Update activity cache
+  activityCache[today] = entry
+
   // Cleanup old entries
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - 400)
@@ -522,9 +525,25 @@ export async function getActivityForRangeAsync(days: number): Promise<DailyActiv
   return result
 }
 
+// Activity cache
+let activityCache: Record<string, DailyActivity> = {}
+
+export function setActivityCache(data: Record<string, DailyActivity>): void {
+  activityCache = data
+}
+
 export function getActivityForRange(days: number): DailyActivity[] {
-  // This needs async, return empty for now - components should use async version
-  return []
+  const result: DailyActivity[] = []
+  const today = new Date()
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const dateStr = d.toISOString().split("T")[0]
+    result.push(activityCache[dateStr] || { date: dateStr, practiceCount: 0, listenCount: 0, sentenceIds: [] })
+  }
+
+  return result
 }
 
 // ===== Pushed Queue (Dexie) =====

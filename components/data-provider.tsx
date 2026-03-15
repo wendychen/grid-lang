@@ -7,6 +7,7 @@ import {
   setSettingsCache,
   setStreakCache,
   setPushedQueueCache,
+  setActivityCache,
 } from "@/lib/srs"
 import { setEdgesCache, setCustomSentencesCache } from "@/lib/graph"
 import { setNotebookCache } from "@/lib/notebook"
@@ -26,12 +27,13 @@ export function DataProvider({ children }: DataProviderProps) {
         await migrateFromLocalStorage()
 
         // Load all data from Dexie into caches
-        const [progress, settings, streak, pushed, edges, customSentences, notebook] =
+        const [progress, settings, streak, pushed, activity, edges, customSentences, notebook] =
           await Promise.all([
             db.progress.toArray(),
             db.settings.get("settings"),
             db.streak.get("streak"),
             db.pushedQueue.get("pushed"),
+            db.activity.toArray(),
             db.edges.toArray(),
             db.customSentences.toArray(),
             db.notebook.toArray(),
@@ -63,6 +65,13 @@ export function DataProvider({ children }: DataProviderProps) {
         }
 
         setPushedQueueCache(pushed?.sentenceIds || [])
+
+        // Set activity cache
+        const activityMap: Record<string, (typeof activity)[0]> = {}
+        for (const a of activity) {
+          activityMap[a.date] = a
+        }
+        setActivityCache(activityMap)
 
         // Set graph caches
         setEdgesCache(edges)
