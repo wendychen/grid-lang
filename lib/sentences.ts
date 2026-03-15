@@ -343,35 +343,32 @@ export function getAllThemes(): ThemePage[] {
   }))
 }
 
+// Cache for custom sentences from Dexie
+let customSentencesCache: Array<{
+  id: string
+  german: string
+  english: string
+  phonetic: string
+  theme: string
+}> = []
+
+export function setCustomSentencesForMerge(data: typeof customSentencesCache): void {
+  customSentencesCache = data
+}
+
 export function getAllSentences(): Sentence[] {
   const base = getAllThemes().flatMap((t) => t.sentences)
 
-  // Merge in custom user-created sentences
-  if (typeof window !== "undefined") {
-    try {
-      const data = localStorage.getItem("gridlang_custom_sentences")
-      if (data) {
-        const custom: Array<{
-          id: string
-          german: string
-          english: string
-          phonetic: string
-          theme: string
-        }> = JSON.parse(data)
-        for (const c of custom) {
-          base.push({
-            id: c.id,
-            german: c.german,
-            english: c.english,
-            phonetic: c.phonetic || "",
-            theme: c.theme || "custom",
-            themeLabel: "Custom",
-          })
-        }
-      }
-    } catch {
-      // ignore parse errors
-    }
+  // Merge in custom user-created sentences from Dexie cache
+  for (const c of customSentencesCache) {
+    base.push({
+      id: c.id,
+      german: c.german,
+      english: c.english,
+      phonetic: c.phonetic || "",
+      theme: c.theme || "custom",
+      themeLabel: "Custom",
+    })
   }
 
   return base

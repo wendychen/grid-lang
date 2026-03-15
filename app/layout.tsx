@@ -1,6 +1,7 @@
 import React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
+import { DataProvider } from "@/components/data-provider"
 
 import "./globals.css"
 
@@ -42,7 +43,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${_inter.variable} ${_jetbrainsMono.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <DataProvider>{children}</DataProvider>
+      </body>
     </html>
   )
 }
