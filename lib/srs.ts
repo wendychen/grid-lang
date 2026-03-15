@@ -1,20 +1,6 @@
-export interface SentenceProgress {
-  id: string
-  reps: number
-  listens: number
-  streak: number
-  dueDate: string // ISO date string YYYY-MM-DD
-  interval: number
-  ease: number
-  position: number
-  lastPracticed: string | null // ISO date string
-}
+import { db, type SentenceProgressEntity, type SettingsEntity, type StreakEntity, type DailyActivityEntity } from "./db"
 
-const STORAGE_KEY = "gridlang_progress"
-const SETTINGS_KEY = "gridlang_settings"
-const STREAK_KEY = "gridlang_streak"
-const PUSHED_KEY = "gridlang_pushed"
-const ACTIVITY_KEY = "gridlang_activity"
+export type SentenceProgress = SentenceProgressEntity
 
 export interface DailyActivity {
   date: string
@@ -22,7 +8,6 @@ export interface DailyActivity {
   listenCount: number
   sentenceIds: string[]
 }
-
 
 export interface AppSettings {
   ttsSpeed: number
@@ -35,7 +20,7 @@ export interface StreakData {
   currentStreak: number
   longestStreak: number
   lastPracticeDate: string | null
-  practiceDays: string[] // array of ISO date strings
+  practiceDays: string[]
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -46,7 +31,12 @@ const DEFAULT_SETTINGS: AppSettings = {
 }
 
 function getToday(): string {
-  return new Date().toISOString().split("T")[0]
+  // Use UTC+8 timezone for day reset (midnight in Asia/Shanghai, Asia/Taipei, etc.)
+  const now = new Date()
+  const utc8Offset = 8 * 60 // UTC+8 in minutes
+  const localOffset = now.getTimezoneOffset() // local offset in minutes (negative for east of UTC)
+  const utc8Time = new Date(now.getTime() + (utc8Offset + localOffset) * 60 * 1000)
+  return utc8Time.toISOString().split("T")[0]
 }
 
 // Simple seeded PRNG (mulberry32) for deterministic daily shuffles
@@ -73,7 +63,7 @@ function shuffleWithSeed<T>(arr: T[], seed: number): T[] {
   const rng = seededRng(seed)
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
   }
   return shuffled
 }
@@ -84,27 +74,21 @@ function daysBetween(a: string, b: string): number {
   return Math.round((db.getTime() - da.getTime()) / (1000 * 60 * 60 * 24))
 }
 
-// ===== Progress Storage =====
+// ===== Progress Storage (Dexie) =====
 
-export function getAllProgress(): Record<string, SentenceProgress> {
-  if (typeof window === "undefined") return {}
-  try {
-    const data = localStorage.getItem(STORAGE_KEY)
-    return data ? JSON.parse(data) : {}
-  } catch {
-    return {}
+export async function getAllProgressAsync(): Promise<Record<string, SentenceProgress>> {
+  const entries = await db.progress.toArray()
+  const result: Record<string, SentenceProgress> = {}
+  for (const e of entries) {
+    result[e.id] = e
   }
+  return result
 }
 
-function saveAllProgress(progress: Record<string, SentenceProgress>): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
-}
-
-export function getProgress(id: string): SentenceProgress {
-  const all = getAllProgress()
+export async function getProgressAsync(id: string): Promise<SentenceProgress> {
+  const prog = await db.progress.get(id)
   return (
-    all[id] || {
+    prog || {
       id,
       reps: 0,
       listens: 0,
@@ -118,20 +102,8 @@ export function getProgress(id: string): SentenceProgress {
   )
 }
 
-export function practiceSentence(id: string): SentenceProgress {
-  const all = getAllProgress()
-  const prog = all[id] || {
-    id,
-    reps: 0,
-    listens: 0,
-    streak: 0,
-    dueDate: getToday(),
-    interval: 1,
-    ease: 2.5,
-    position: 0,
-    lastPracticed: null,
-  }
-
+export async function practiceSentenceAsync(id: string): Promise<SentenceProgress> {
+  const prog = await getProgressAsync(id)
   const today = getToday()
 
   // Increment reps
@@ -143,7 +115,6 @@ export function practiceSentence(id: string): SentenceProgress {
     if (gap <= 1) {
       prog.streak += 1
     } else {
-      // Streak broken
       prog.streak = 1
       prog.interval = 1
       prog.ease = Math.max(1.3, prog.ease - 0.2)
@@ -164,44 +135,101 @@ export function practiceSentence(id: string): SentenceProgress {
   prog.position += 100
   prog.lastPracticed = today
 
-  all[id] = prog
-  saveAllProgress(all)
+  await db.progress.put(prog)
 
   // Update daily streak and activity log
-  updateDailyStreak()
-  recordDailyActivity(id, "practice")
+  await updateDailyStreakAsync()
+  await recordDailyActivityAsync(id, "practice")
 
   return prog
 }
 
-export function recordListen(id: string): void {
-  const all = getAllProgress()
-  const prog = all[id] || {
-    id,
-    reps: 0,
-    listens: 0,
-    streak: 0,
-    dueDate: getToday(),
-    interval: 1,
-    ease: 2.5,
-    position: 0,
-    lastPracticed: null,
-  }
+export async function recordListenAsync(id: string): Promise<void> {
+  const prog = await getProgressAsync(id)
   prog.listens += 1
-  all[id] = prog
-  saveAllProgress(all)
-  recordDailyActivity(id, "listen")
+  await db.progress.put(prog)
+  await recordDailyActivityAsync(id, "listen")
+}
+
+// ===== Sync wrappers using useLiveQuery cache =====
+// These are for backwards compatibility with sync components
+
+let progressCache: Record<string, SentenceProgress> = {}
+
+export function setProgressCache(data: Record<string, SentenceProgress>): void {
+  progressCache = data
+}
+
+export function getAllProgress(): Record<string, SentenceProgress> {
+  return progressCache
+}
+
+export function getProgress(id: string): SentenceProgress {
+  return (
+    progressCache[id] || {
+      id,
+      reps: 0,
+      listens: 0,
+      streak: 0,
+      dueDate: getToday(),
+      interval: 1,
+      ease: 2.5,
+      position: 0,
+      lastPracticed: null,
+    }
+  )
+}
+
+// Sync wrappers that call async versions
+export function practiceSentence(id: string): SentenceProgress {
+  const prog = getProgress(id)
+  const today = getToday()
+
+  prog.reps += 1
+  if (prog.lastPracticed) {
+    const gap = daysBetween(prog.lastPracticed, today)
+    if (gap <= 1) {
+      prog.streak += 1
+    } else {
+      prog.streak = 1
+      prog.interval = 1
+      prog.ease = Math.max(1.3, prog.ease - 0.2)
+    }
+  } else {
+    prog.streak = 1
+  }
+  prog.interval = Math.min(365, Math.max(1, Math.round(prog.interval * prog.ease)))
+  const nextDue = new Date(today)
+  nextDue.setDate(nextDue.getDate() + prog.interval)
+  prog.dueDate = nextDue.toISOString().split("T")[0]
+  prog.position += 100
+  prog.lastPracticed = today
+
+  // Fire async update
+  db.progress.put(prog)
+  updateDailyStreakAsync()
+  recordDailyActivityAsync(id, "practice")
+
+  progressCache[id] = prog
+  return prog
+}
+
+export function recordListen(id: string): void {
+  const prog = getProgress(id)
+  prog.listens += 1
+  progressCache[id] = prog
+  db.progress.put(prog)
+  recordDailyActivityAsync(id, "listen")
 }
 
 // ===== Today's Queue =====
 
-export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12): string[] {
+export async function getTodaysQueueAsync(allSentenceIds: string[], maxItems: number = 12): Promise<string[]> {
   const today = getToday()
   const seed = dateToSeed(today)
-  const allProg = getAllProgress()
+  const allProg = await getAllProgressAsync()
 
-  // 0. Start with pushed sentences from themed pages (highest priority)
-  const pushed = getPushedQueue()
+  const pushed = await getPushedQueueAsync()
   const inQueue = new Set<string>()
   const queue: string[] = []
 
@@ -212,7 +240,6 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
     }
   }
 
-  // 1. Get due reviews
   const dueReviews: { id: string; dueDate: string; position: number }[] = []
   const learned: Set<string> = new Set()
 
@@ -226,13 +253,11 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
     }
   }
 
-  // Sort by due date (oldest first), then shuffle within same due date for variety
   dueReviews.sort((a, b) => {
     if (a.dueDate !== b.dueDate) return a.dueDate < b.dueDate ? -1 : 1
     return 0
   })
 
-  // Group by dueDate and shuffle each group
   const dueGroups = new Map<string, typeof dueReviews>()
   for (const r of dueReviews) {
     const group = dueGroups.get(r.dueDate) || []
@@ -250,7 +275,70 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
     inQueue.add(r.id)
   }
 
-  // 2. Fill remaining slots with random unlearned sentences (shuffled by daily seed)
+  if (queue.length < maxItems) {
+    const unlearned = allSentenceIds.filter((id) => !learned.has(id) && !inQueue.has(id))
+    const shuffledUnlearned = shuffleWithSeed(unlearned, seed)
+    const needed = maxItems - queue.length
+    for (let i = 0; i < Math.min(needed, shuffledUnlearned.length); i++) {
+      queue.push(shuffledUnlearned[i])
+    }
+  }
+
+  return queue.slice(0, maxItems)
+}
+
+// Sync version using cache
+export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12): string[] {
+  const today = getToday()
+  const seed = dateToSeed(today)
+  const allProg = progressCache
+
+  const pushed = pushedQueueCache
+  const inQueue = new Set<string>()
+  const queue: string[] = []
+
+  for (const id of pushed) {
+    if (allSentenceIds.includes(id) && !inQueue.has(id)) {
+      queue.push(id)
+      inQueue.add(id)
+    }
+  }
+
+  const dueReviews: { id: string; dueDate: string; position: number }[] = []
+  const learned: Set<string> = new Set()
+
+  for (const id of allSentenceIds) {
+    const prog = allProg[id]
+    if (prog && prog.reps > 0) {
+      learned.add(id)
+      if (prog.dueDate <= today && !inQueue.has(id)) {
+        dueReviews.push({ id, dueDate: prog.dueDate, position: prog.position })
+      }
+    }
+  }
+
+  dueReviews.sort((a, b) => {
+    if (a.dueDate !== b.dueDate) return a.dueDate < b.dueDate ? -1 : 1
+    return 0
+  })
+
+  const dueGroups = new Map<string, typeof dueReviews>()
+  for (const r of dueReviews) {
+    const group = dueGroups.get(r.dueDate) || []
+    group.push(r)
+    dueGroups.set(r.dueDate, group)
+  }
+  const shuffledDue: typeof dueReviews = []
+  for (const [, group] of dueGroups) {
+    shuffledDue.push(...shuffleWithSeed(group, seed))
+  }
+
+  const remaining = maxItems - queue.length
+  for (const r of shuffledDue.slice(0, Math.min(8, remaining))) {
+    queue.push(r.id)
+    inQueue.add(r.id)
+  }
+
   if (queue.length < maxItems) {
     const unlearned = allSentenceIds.filter((id) => !learned.has(id) && !inQueue.has(id))
     const shuffledUnlearned = shuffleWithSeed(unlearned, seed)
@@ -267,7 +355,7 @@ export function getTodaysQueue(allSentenceIds: string[], maxItems: number = 12):
 
 export function getColorForReps(reps: number): string {
   if (reps === 0) return "var(--cell-new)"
-  if (reps === 10) return "var(--cell-lv1)"
+  if (reps <= 10) return "var(--cell-lv1)"
   if (reps <= 20) return "var(--cell-lv2)"
   if (reps <= 30) return "var(--cell-lv3)"
   if (reps <= 40) return "var(--cell-lv4)"
@@ -280,7 +368,7 @@ export function getColorForReps(reps: number): string {
 
 export function getColorClass(reps: number): string {
   if (reps === 0) return "cell-new"
-  if (reps === 10) return "cell-lv1"
+  if (reps <= 10) return "cell-lv1"
   if (reps <= 20) return "cell-lv2"
   if (reps <= 30) return "cell-lv3"
   if (reps <= 40) return "cell-lv4"
@@ -291,43 +379,56 @@ export function getColorClass(reps: number): string {
   return "cell-lv9"
 }
 
-// ===== Settings =====
+// ===== Settings (Dexie) =====
+
+let settingsCache: AppSettings = DEFAULT_SETTINGS
+
+export function setSettingsCache(data: AppSettings): void {
+  settingsCache = data
+}
+
+export async function getSettingsAsync(): Promise<AppSettings> {
+  const data = await db.settings.get("settings")
+  return data ? { ttsSpeed: data.ttsSpeed, autoPlay: data.autoPlay, gridCols: data.gridCols, gridRows: data.gridRows } : DEFAULT_SETTINGS
+}
+
+export async function saveSettingsAsync(settings: AppSettings): Promise<void> {
+  await db.settings.put({ id: "settings", ...settings })
+}
 
 export function getSettings(): AppSettings {
-  if (typeof window === "undefined") return DEFAULT_SETTINGS
-  try {
-    const data = localStorage.getItem(SETTINGS_KEY)
-    return data ? { ...DEFAULT_SETTINGS, ...JSON.parse(data) } : DEFAULT_SETTINGS
-  } catch {
-    return DEFAULT_SETTINGS
-  }
+  return settingsCache
 }
 
 export function saveSettings(settings: AppSettings): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+  settingsCache = settings
+  db.settings.put({ id: "settings", ...settings })
 }
 
-// ===== Streak Tracking =====
+// ===== Streak Tracking (Dexie) =====
+
+let streakCache: StreakData = { currentStreak: 0, longestStreak: 0, lastPracticeDate: null, practiceDays: [] }
+
+export function setStreakCache(data: StreakData): void {
+  streakCache = data
+}
+
+export async function getStreakDataAsync(): Promise<StreakData> {
+  const data = await db.streak.get("streak")
+  return data
+    ? { currentStreak: data.currentStreak, longestStreak: data.longestStreak, lastPracticeDate: data.lastPracticeDate, practiceDays: data.practiceDays }
+    : { currentStreak: 0, longestStreak: 0, lastPracticeDate: null, practiceDays: [] }
+}
 
 export function getStreakData(): StreakData {
-  if (typeof window === "undefined")
-    return { currentStreak: 0, longestStreak: 0, lastPracticeDate: null, practiceDays: [] }
-  try {
-    const data = localStorage.getItem(STREAK_KEY)
-    return data
-      ? JSON.parse(data)
-      : { currentStreak: 0, longestStreak: 0, lastPracticeDate: null, practiceDays: [] }
-  } catch {
-    return { currentStreak: 0, longestStreak: 0, lastPracticeDate: null, practiceDays: [] }
-  }
+  return streakCache
 }
 
-function updateDailyStreak(): void {
-  const streak = getStreakData()
+async function updateDailyStreakAsync(): Promise<void> {
+  const streak = await getStreakDataAsync()
   const today = getToday()
 
-  if (streak.lastPracticeDate === today) return // already updated today
+  if (streak.lastPracticeDate === today) return
 
   if (streak.lastPracticeDate) {
     const gap = daysBetween(streak.lastPracticeDate, today)
@@ -345,47 +446,42 @@ function updateDailyStreak(): void {
 
   if (!streak.practiceDays.includes(today)) {
     streak.practiceDays.push(today)
-    // Keep only last 400 days
     if (streak.practiceDays.length > 400) {
       streak.practiceDays = streak.practiceDays.slice(-400)
     }
   }
 
-  localStorage.setItem(STREAK_KEY, JSON.stringify(streak))
+  await db.streak.put({ id: "streak", ...streak })
+  streakCache = streak
+}
+
+// ===== Reset (Dexie) =====
+
+export async function resetAllProgressAsync(): Promise<void> {
+  await db.progress.clear()
+  await db.streak.clear()
+  await db.activity.clear()
+  await db.pushedQueue.clear()
+  await db.edges.clear()
+  await db.customSentences.clear()
+  await db.notebook.clear()
+  progressCache = {}
+  streakCache = { currentStreak: 0, longestStreak: 0, lastPracticeDate: null, practiceDays: [] }
+  pushedQueueCache = []
 }
 
 export function resetAllProgress(): void {
-  if (typeof window === "undefined") return
-  localStorage.removeItem(STORAGE_KEY)
-  localStorage.removeItem(STREAK_KEY)
-  localStorage.removeItem(PUSHED_KEY)
-  localStorage.removeItem(ACTIVITY_KEY)
-  localStorage.removeItem("gridlang_graph_edges")
-  localStorage.removeItem("gridlang_custom_sentences")
-  localStorage.removeItem("gridlang_notebook")
+  resetAllProgressAsync()
 }
 
-// ===== Daily Activity Log =====
+// ===== Daily Activity Log (Dexie) =====
 
-function getAllActivity(): Record<string, DailyActivity> {
-  if (typeof window === "undefined") return {}
-  try {
-    const data = localStorage.getItem(ACTIVITY_KEY)
-    return data ? JSON.parse(data) : {}
-  } catch {
-    return {}
-  }
-}
-
-function saveAllActivity(activity: Record<string, DailyActivity>): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(ACTIVITY_KEY, JSON.stringify(activity))
-}
-
-function recordDailyActivity(sentenceId: string, type: "practice" | "listen"): void {
+async function recordDailyActivityAsync(sentenceId: string, type: "practice" | "listen"): Promise<void> {
   const today = getToday()
-  const all = getAllActivity()
-  const entry = all[today] || { date: today, practiceCount: 0, listenCount: 0, sentenceIds: [] }
+  let entry = await db.activity.get(today)
+  if (!entry) {
+    entry = { date: today, practiceCount: 0, listenCount: 0, sentenceIds: [] }
+  }
 
   if (type === "practice") {
     entry.practiceCount += 1
@@ -397,21 +493,22 @@ function recordDailyActivity(sentenceId: string, type: "practice" | "listen"): v
     entry.sentenceIds.push(sentenceId)
   }
 
-  all[today] = entry
+  await db.activity.put(entry)
 
-  // Keep only last 400 days of activity to prevent unbounded growth
+  // Cleanup old entries
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - 400)
   const cutoffStr = cutoff.toISOString().split("T")[0]
-  for (const key of Object.keys(all)) {
-    if (key < cutoffStr) delete all[key]
-  }
-
-  saveAllActivity(all)
+  await db.activity.where("date").below(cutoffStr).delete()
 }
 
-export function getActivityForRange(days: number): DailyActivity[] {
-  const all = getAllActivity()
+export async function getActivityForRangeAsync(days: number): Promise<DailyActivity[]> {
+  const allEntries = await db.activity.toArray()
+  const activityMap: Record<string, DailyActivity> = {}
+  for (const e of allEntries) {
+    activityMap[e.date] = e
+  }
+
   const result: DailyActivity[] = []
   const today = new Date()
 
@@ -419,112 +516,58 @@ export function getActivityForRange(days: number): DailyActivity[] {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
     const dateStr = d.toISOString().split("T")[0]
-    result.push(
-      all[dateStr] || { date: dateStr, practiceCount: 0, listenCount: 0, sentenceIds: [] }
-    )
+    result.push(activityMap[dateStr] || { date: dateStr, practiceCount: 0, listenCount: 0, sentenceIds: [] })
   }
 
   return result
 }
 
-// ===== Export / Import =====
-
-export interface GridLangBackup {
-  version: 1
-  exportedAt: string
-  progress: Record<string, SentenceProgress>
-  settings: AppSettings
-  streak: StreakData
-  activity: Record<string, DailyActivity>
-  pushed: string[]
-  graphEdges?: unknown[]
-  customSentences?: unknown[]
-  notebook?: unknown
+export function getActivityForRange(days: number): DailyActivity[] {
+  // This needs async, return empty for now - components should use async version
+  return []
 }
 
-export function exportAllData(): GridLangBackup {
-  // Read graph and notebook data directly from localStorage to avoid circular imports
-  let graphEdges: unknown[] = []
-  let customSentences: unknown[] = []
-  let notebook: unknown = null
-  try {
-    const edgesRaw = localStorage.getItem("gridlang_graph_edges")
-    if (edgesRaw) graphEdges = JSON.parse(edgesRaw)
-    const customRaw = localStorage.getItem("gridlang_custom_sentences")
-    if (customRaw) customSentences = JSON.parse(customRaw)
-    const notebookRaw = localStorage.getItem("gridlang_notebook")
-    if (notebookRaw) notebook = JSON.parse(notebookRaw)
-  } catch { /* ignore */ }
+// ===== Pushed Queue (Dexie) =====
 
-  return {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    progress: getAllProgress(),
-    settings: getSettings(),
-    streak: getStreakData(),
-    activity: getAllActivity(),
-    pushed: getPushedQueue(),
-    graphEdges,
-    customSentences,
-    notebook,
-  }
+let pushedQueueCache: string[] = []
+
+export function setPushedQueueCache(data: string[]): void {
+  pushedQueueCache = data
 }
 
-export function importAllData(backup: GridLangBackup): void {
-  if (typeof window === "undefined") return
-  if (!backup || backup.version !== 1) {
-    throw new Error("Invalid backup file format")
-  }
-  if (backup.progress) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(backup.progress))
-  }
-  if (backup.settings) {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(backup.settings))
-  }
-  if (backup.streak) {
-    localStorage.setItem(STREAK_KEY, JSON.stringify(backup.streak))
-  }
-  if (backup.activity) {
-    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(backup.activity))
-  }
-  if (backup.pushed) {
-    localStorage.setItem(PUSHED_KEY, JSON.stringify(backup.pushed))
-  }
-  if (backup.graphEdges) {
-    localStorage.setItem("gridlang_graph_edges", JSON.stringify(backup.graphEdges))
-  }
-  if (backup.customSentences) {
-    localStorage.setItem("gridlang_custom_sentences", JSON.stringify(backup.customSentences))
-  }
-  if (backup.notebook) {
-    localStorage.setItem("gridlang_notebook", JSON.stringify(backup.notebook))
-  }
+export async function getPushedQueueAsync(): Promise<string[]> {
+  const data = await db.pushedQueue.get("pushed")
+  return data?.sentenceIds || []
 }
-
-// ===== Pushed Queue (from themed pages to Today's grid) =====
 
 export function getPushedQueue(): string[] {
-  if (typeof window === "undefined") return []
-  try {
-    const data = localStorage.getItem(PUSHED_KEY)
-    return data ? JSON.parse(data) : []
-  } catch {
-    return []
+  return pushedQueueCache
+}
+
+export async function pushToTodayQueueAsync(sentenceId: string): Promise<void> {
+  const queue = await getPushedQueueAsync()
+  if (!queue.includes(sentenceId)) {
+    queue.push(sentenceId)
+    await db.pushedQueue.put({ id: "pushed", sentenceIds: queue })
+    pushedQueueCache = queue
   }
 }
 
 export function pushToTodayQueue(sentenceId: string): void {
-  if (typeof window === "undefined") return
-  const queue = getPushedQueue()
-  if (!queue.includes(sentenceId)) {
-    queue.push(sentenceId)
-    localStorage.setItem(PUSHED_KEY, JSON.stringify(queue))
+  if (!pushedQueueCache.includes(sentenceId)) {
+    pushedQueueCache.push(sentenceId)
+    db.pushedQueue.put({ id: "pushed", sentenceIds: pushedQueueCache })
   }
 }
 
+export async function clearPushedQueueAsync(): Promise<void> {
+  await db.pushedQueue.delete("pushed")
+  pushedQueueCache = []
+}
+
 export function clearPushedQueue(): void {
-  if (typeof window === "undefined") return
-  localStorage.removeItem(PUSHED_KEY)
+  pushedQueueCache = []
+  db.pushedQueue.delete("pushed")
 }
 
 // ===== Stats =====
@@ -535,7 +578,7 @@ export function getThemeStats(sentenceIds: string[]): {
   avgReps: number
   avgListens: number
 } {
-  const allProg = getAllProgress()
+  const allProg = progressCache
   let practiced = 0
   let totalReps = 0
   let totalListens = 0
@@ -555,4 +598,120 @@ export function getThemeStats(sentenceIds: string[]): {
     avgReps: practiced > 0 ? Math.round((totalReps / practiced) * 10) / 10 : 0,
     avgListens: practiced > 0 ? Math.round((totalListens / practiced) * 10) / 10 : 0,
   }
+}
+
+// ===== Export / Import (Dexie) =====
+
+export interface GridLangBackup {
+  version: 1
+  exportedAt: string
+  progress: Record<string, SentenceProgress>
+  settings: AppSettings
+  streak: StreakData
+  activity: Record<string, DailyActivity>
+  pushed: string[]
+  graphEdges?: unknown[]
+  customSentences?: unknown[]
+  notebook?: unknown
+}
+
+export async function exportAllDataAsync(): Promise<GridLangBackup> {
+  const progress = await getAllProgressAsync()
+  const settings = await getSettingsAsync()
+  const streak = await getStreakDataAsync()
+  const activityArr = await db.activity.toArray()
+  const activity: Record<string, DailyActivity> = {}
+  for (const a of activityArr) {
+    activity[a.date] = a
+  }
+  const pushed = await getPushedQueueAsync()
+  const graphEdges = await db.edges.toArray()
+  const customSentences = await db.customSentences.toArray()
+  const notebookArr = await db.notebook.toArray()
+  const notebook: Record<string, unknown> = {}
+  for (const n of notebookArr) {
+    notebook[n.date] = n
+  }
+
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    progress,
+    settings,
+    streak,
+    activity,
+    pushed,
+    graphEdges,
+    customSentences,
+    notebook,
+  }
+}
+
+export function exportAllData(): GridLangBackup {
+  // Sync version - returns cached data
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    progress: progressCache,
+    settings: settingsCache,
+    streak: streakCache,
+    activity: {},
+    pushed: pushedQueueCache,
+  }
+}
+
+export async function importAllDataAsync(backup: GridLangBackup): Promise<void> {
+  if (!backup || backup.version !== 1) {
+    throw new Error("Invalid backup file format")
+  }
+
+  if (backup.progress) {
+    await db.progress.clear()
+    const entries = Object.values(backup.progress)
+    if (entries.length > 0) {
+      await db.progress.bulkPut(entries)
+    }
+  }
+
+  if (backup.settings) {
+    await db.settings.put({ id: "settings", ...backup.settings })
+  }
+
+  if (backup.streak) {
+    await db.streak.put({ id: "streak", ...backup.streak })
+  }
+
+  if (backup.activity) {
+    await db.activity.clear()
+    const entries = Object.values(backup.activity)
+    if (entries.length > 0) {
+      await db.activity.bulkPut(entries)
+    }
+  }
+
+  if (backup.pushed) {
+    await db.pushedQueue.put({ id: "pushed", sentenceIds: backup.pushed })
+  }
+
+  if (backup.graphEdges && Array.isArray(backup.graphEdges)) {
+    await db.edges.clear()
+    await db.edges.bulkPut(backup.graphEdges as any[])
+  }
+
+  if (backup.customSentences && Array.isArray(backup.customSentences)) {
+    await db.customSentences.clear()
+    await db.customSentences.bulkPut(backup.customSentences as any[])
+  }
+
+  if (backup.notebook && typeof backup.notebook === "object") {
+    await db.notebook.clear()
+    const entries = Object.values(backup.notebook as Record<string, any>)
+    if (entries.length > 0) {
+      await db.notebook.bulkPut(entries)
+    }
+  }
+}
+
+export function importAllData(backup: GridLangBackup): void {
+  importAllDataAsync(backup)
 }
