@@ -25,6 +25,13 @@ import {
   Smile,
   Sun,
   Plane,
+  Users,
+  Briefcase,
+  Music,
+  Smartphone,
+  CalendarDays,
+  GraduationCap,
+  Dog,
   ChevronLeft,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -40,6 +47,13 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   smile: Smile,
   sun: Sun,
   plane: Plane,
+  users: Users,
+  briefcase: Briefcase,
+  music: Music,
+  smartphone: Smartphone,
+  calendar: CalendarDays,
+  graduation: GraduationCap,
+  dog: Dog,
 }
 
 export function ThemedPages() {
