@@ -1,4 +1,11 @@
 import { db, type SentenceProgressEntity, type SettingsEntity, type StreakEntity, type DailyActivityEntity } from "./db"
+import {
+  saveProgressFirestore,
+  saveSettingsFirestore,
+  saveStreakFirestore,
+  saveActivityFirestore,
+  savePushedQueueFirestore,
+} from "./firestore"
 
 export type SentenceProgress = SentenceProgressEntity
 
@@ -136,6 +143,7 @@ export async function practiceSentenceAsync(id: string): Promise<SentenceProgres
   prog.lastPracticed = today
 
   await db.progress.put(prog)
+  saveProgressFirestore(prog)
 
   // Update daily streak and activity log
   await updateDailyStreakAsync()
@@ -148,6 +156,7 @@ export async function recordListenAsync(id: string): Promise<void> {
   const prog = await getProgressAsync(id)
   prog.listens += 1
   await db.progress.put(prog)
+  saveProgressFirestore(prog)
   await recordDailyActivityAsync(id, "listen")
 }
 
