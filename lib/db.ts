@@ -72,6 +72,17 @@ export interface NotebookEntryEntity {
   updatedAt: string
 }
 
+export interface SentencePhotoEntity {
+  id: string // sentenceId
+  photos: {
+    id: string
+    dataUrl: string
+    name: string
+    size: number
+    addedAt: string
+  }[]
+}
+
 // ===== Dexie Database Class =====
 
 class GridLangDB extends Dexie {
