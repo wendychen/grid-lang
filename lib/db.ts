@@ -83,6 +83,15 @@ export interface SentencePhotoEntity {
   }[]
 }
 
+export interface QuizStatsEntity {
+  id: string // always "quiz"
+  totalXp: number
+  quizzesCompleted: number
+  bestCombo: number
+  totalCorrect: number
+  totalAnswered: number
+}
+
 // ===== Dexie Database Class =====
 
 class GridLangDB extends Dexie {
@@ -94,6 +103,7 @@ class GridLangDB extends Dexie {
   edges!: EntityTable<GraphEdgeEntity, "id">
   customSentences!: EntityTable<CustomSentenceEntity, "id">
   notebook!: EntityTable<NotebookEntryEntity, "date">
+  quizStats!: EntityTable<QuizStatsEntity, "id">
 
   constructor() {
     super("GridLangDB")
@@ -107,6 +117,12 @@ class GridLangDB extends Dexie {
       edges: "id, source, target",
       customSentences: "id, theme, createdAt",
       notebook: "date, updatedAt",
+    })
+
+    // Additive, non-destructive upgrade: adds the quizStats table while
+    // carrying all existing tables and data forward unchanged.
+    this.version(2).stores({
+      quizStats: "id",
     })
   }
 }

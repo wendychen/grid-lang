@@ -2,10 +2,10 @@
 
 import React from "react"
 
-import { LayoutGrid, BookOpen, BarChart3, Settings, Share2, NotebookPen } from "lucide-react"
+import { LayoutGrid, BookOpen, BarChart3, Settings, Share2, NotebookPen, Dumbbell } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export type AppView = "today" | "themes" | "graph" | "notebook" | "progress" | "settings"
+export type AppView = "today" | "quiz" | "themes" | "graph" | "notebook" | "progress" | "settings"
 
 interface BottomNavProps {
   active: AppView
@@ -14,6 +14,7 @@ interface BottomNavProps {
 
 const NAV_ITEMS: { id: AppView; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "today", label: "Today", icon: LayoutGrid },
+  { id: "quiz", label: "Quiz", icon: Dumbbell },
   { id: "themes", label: "Themes", icon: BookOpen },
   { id: "graph", label: "Graph", icon: Share2 },
   { id: "notebook", label: "Notebook", icon: NotebookPen },
@@ -33,7 +34,7 @@ export function BottomNav({ active, onChange }: BottomNavProps) {
               key={item.id}
               onClick={() => onChange(item.id)}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors min-w-[60px]",
+                "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors min-w-[44px]",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
