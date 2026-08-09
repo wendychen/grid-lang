@@ -12,6 +12,7 @@ import {
 import { setEdgesCache, setCustomSentencesCache } from "@/lib/graph"
 import { setNotebookCache } from "@/lib/notebook"
 import { setCustomSentencesForMerge } from "@/lib/sentences"
+import { setQuizStatsCache } from "@/lib/quiz-stats"
 
 interface DataProviderProps {
   children: ReactNode
@@ -27,7 +28,7 @@ export function DataProvider({ children }: DataProviderProps) {
         await migrateFromLocalStorage()
 
         // Load all data from Dexie into caches
-        const [progress, settings, streak, pushed, activity, edges, customSentences, notebook] =
+        const [progress, settings, streak, pushed, activity, edges, customSentences, notebook, quizStats] =
           await Promise.all([
             db.progress.toArray(),
             db.settings.get("settings"),
@@ -37,6 +38,7 @@ export function DataProvider({ children }: DataProviderProps) {
             db.edges.toArray(),
             db.customSentences.toArray(),
             db.notebook.toArray(),
+            db.quizStats.get("quiz"),
           ])
 
         // Set SRS caches
@@ -86,6 +88,9 @@ export function DataProvider({ children }: DataProviderProps) {
           notebookMap[n.date] = n
         }
         setNotebookCache(notebookMap)
+
+        // Set quiz stats cache
+        setQuizStatsCache(quizStats ?? null)
 
         setReady(true)
       } catch (error) {

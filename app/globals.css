@@ -49,6 +49,14 @@
     --accent-blue: 215 80% 52%;
     --accent-green: 142 55% 55%;
 
+    /* Quiz feedback colors */
+    --quiz-correct: 142 66% 45%;
+    --quiz-correct-foreground: 0 0% 100%;
+    --quiz-wrong: 0 78% 56%;
+    --quiz-wrong-foreground: 0 0% 100%;
+    --quiz-xp: 42 96% 52%;
+    --quiz-heart: 348 83% 58%;
+
     --chart-1: 215 80% 52%;
     --chart-2: 142 55% 55%;
     --chart-3: 45 90% 55%;
@@ -100,6 +108,14 @@
     --accent-orange: 25 95% 55%;
     --accent-blue: 215 80% 56%;
     --accent-green: 142 55% 55%;
+
+    /* Quiz feedback colors */
+    --quiz-correct: 142 60% 44%;
+    --quiz-correct-foreground: 0 0% 100%;
+    --quiz-wrong: 0 72% 55%;
+    --quiz-wrong-foreground: 0 0% 100%;
+    --quiz-xp: 42 96% 55%;
+    --quiz-heart: 348 80% 60%;
 
     --chart-1: 215 80% 56%;
     --chart-2: 142 55% 55%;
@@ -226,6 +242,142 @@
 
   .bg-primary\/20 {
     background-color: hsl(var(--primary) / 0.2);
+  }
+
+  /* ===== Quiz feedback color helpers ===== */
+  .text-quiz-correct {
+    color: hsl(var(--quiz-correct));
+  }
+  .text-quiz-wrong {
+    color: hsl(var(--quiz-wrong));
+  }
+  .text-quiz-xp {
+    color: hsl(var(--quiz-xp));
+  }
+  .text-quiz-heart {
+    color: hsl(var(--quiz-heart));
+  }
+  .fill-quiz-heart {
+    fill: hsl(var(--quiz-heart));
+  }
+}
+
+/* ===== Quiz interactions & animations ===== */
+
+/* Duolingo-style "3D" tap card: solid bottom edge that depresses on press */
+.quiz-3d {
+  border-bottom-width: 4px;
+  transition: transform 0.06s ease, box-shadow 0.06s ease, background-color 0.15s ease,
+    border-color 0.15s ease, color 0.15s ease;
+}
+.quiz-3d:active:not(:disabled) {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+@keyframes quiz-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+.animate-quiz-shake {
+  animation: quiz-shake 0.4s ease;
+}
+
+@keyframes quiz-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-quiz-pop {
+  animation: quiz-pop 0.3s ease-out;
+}
+
+@keyframes quiz-xp-float {
+  0% {
+    transform: translateY(0) scale(0.9);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-36px) scale(1.1);
+    opacity: 0;
+  }
+}
+.animate-quiz-xp-float {
+  animation: quiz-xp-float 0.9s ease-out forwards;
+}
+
+@keyframes quiz-flame-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+.animate-quiz-flame {
+  animation: quiz-flame-pulse 0.7s ease-in-out infinite;
+}
+
+@keyframes quiz-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-quiz-slide-up {
+  animation: quiz-slide-up 0.25s ease-out;
+}
+
+@keyframes quiz-confetti-fall {
+  0% {
+    transform: translateY(-10%) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(320px) rotate(540deg);
+    opacity: 0;
+  }
+}
+.animate-quiz-confetti {
+  animation: quiz-confetti-fall linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-quiz-shake,
+  .animate-quiz-pop,
+  .animate-quiz-xp-float,
+  .animate-quiz-flame,
+  .animate-quiz-slide-up,
+  .animate-quiz-confetti {
+    animation: none !important;
   }
 }
 

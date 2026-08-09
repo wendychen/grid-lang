@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { BottomNav, type AppView } from "@/components/bottom-nav"
 import { TodaysGrid } from "@/components/todays-grid"
+import { QuizView } from "@/components/quiz-view"
 import { ThemedPages } from "@/components/themed-pages"
 import { GraphView } from "@/components/graph-view"
 import { NotebookView } from "@/components/notebook-view"
@@ -26,6 +27,7 @@ export function AppShell() {
           </div>
           <p className="text-xs text-muted-foreground font-medium">
             {activeView === "today" && "Today's Practice"}
+            {activeView === "quiz" && "Quiz"}
             {activeView === "themes" && "Themed Pages"}
             {activeView === "graph" && "Sentence Graph"}
             {activeView === "notebook" && "Notebook"}
@@ -38,6 +40,7 @@ export function AppShell() {
       {/* Main Content */}
       <main className="flex-1 w-full px-4 py-4 pb-24 lg:px-8">
         {activeView === "today" && <TodaysGrid />}
+        {activeView === "quiz" && <QuizView />}
         {activeView === "themes" && <ThemedPages />}
         {activeView === "graph" && <GraphView />}
         {activeView === "notebook" && <NotebookView />}
