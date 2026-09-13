@@ -12,6 +12,11 @@ import { getAllSentences } from "@/lib/sentences"
 import { Flame, Target, Volume2, RotateCw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+function parseLocalDate(dateKey: string): Date {
+  const [year, month, day] = dateKey.split("-").map(Number)
+  return new Date(year, month - 1, day)
+}
+
 // ===== 365-Day Heatmap =====
 
 function Heatmap365({ activity }: { activity: DailyActivity[] }) {
@@ -23,7 +28,7 @@ function Heatmap365({ activity }: { activity: DailyActivity[] }) {
     let currentWeek: DailyActivity[] = []
 
     for (let i = 0; i < activity.length; i++) {
-      const dayOfWeek = new Date(activity[i].date).getDay()
+      const dayOfWeek = parseLocalDate(activity[i].date).getDay()
       // Convert to Monday-start: Mon=0, Tue=1, ... Sun=6
       const adjusted = dayOfWeek === 0 ? 6 : dayOfWeek - 1
 
@@ -67,11 +72,11 @@ function Heatmap365({ activity }: { activity: DailyActivity[] }) {
     for (let w = 0; w < weeks.length; w++) {
       for (const day of weeks[w]) {
         if (!day.date) continue
-        const month = new Date(day.date).getMonth()
+        const month = parseLocalDate(day.date).getMonth()
         if (month !== lastMonth) {
           lastMonth = month
           labels.push({
-            label: new Date(day.date).toLocaleDateString("en-US", { month: "short" }),
+            label: parseLocalDate(day.date).toLocaleDateString("en-US", { month: "short" }),
             weekIndex: w,
           })
           break
@@ -147,7 +152,7 @@ function Heatmap365({ activity }: { activity: DailyActivity[] }) {
 
                   const total = day.practiceCount + day.listenCount
                   const tooltipText = day.date
-                    ? `${new Date(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${total} activities (${day.practiceCount}p, ${day.listenCount}l)`
+                    ? `${parseLocalDate(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${total} activities (${day.practiceCount}p, ${day.listenCount}l)`
                     : ""
 
                   return (
