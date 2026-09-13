@@ -37,13 +37,15 @@ const DEFAULT_SETTINGS: AppSettings = {
   gridRows: 4,
 }
 
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 function getToday(): string {
-  // Use UTC+8 timezone for day reset (midnight in Asia/Shanghai, Asia/Taipei, etc.)
-  const now = new Date()
-  const utc8Offset = 8 * 60 // UTC+8 in minutes
-  const localOffset = now.getTimezoneOffset() // local offset in minutes (negative for east of UTC)
-  const utc8Time = new Date(now.getTime() + (utc8Offset + localOffset) * 60 * 1000)
-  return utc8Time.toISOString().split("T")[0]
+  return formatLocalDate(new Date())
 }
 
 // Simple seeded PRNG (mulberry32) for deterministic daily shuffles
@@ -136,7 +138,7 @@ export async function practiceSentenceAsync(id: string): Promise<SentenceProgres
   // Set next due date
   const nextDue = new Date(today)
   nextDue.setDate(nextDue.getDate() + prog.interval)
-  prog.dueDate = nextDue.toISOString().split("T")[0]
+  prog.dueDate = formatLocalDate(nextDue)
 
   // Push to end of queue
   prog.position += 100
@@ -210,7 +212,7 @@ export function practiceSentence(id: string): SentenceProgress {
   prog.interval = Math.min(365, Math.max(1, Math.round(prog.interval * prog.ease)))
   const nextDue = new Date(today)
   nextDue.setDate(nextDue.getDate() + prog.interval)
-  prog.dueDate = nextDue.toISOString().split("T")[0]
+  prog.dueDate = formatLocalDate(nextDue)
   prog.position += 100
   prog.lastPracticed = today
 
@@ -510,7 +512,7 @@ async function recordDailyActivityAsync(sentenceId: string, type: "practice" | "
   // Cleanup old entries
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - 400)
-  const cutoffStr = cutoff.toISOString().split("T")[0]
+  const cutoffStr = formatLocalDate(cutoff)
   await db.activity.where("date").below(cutoffStr).delete()
 }
 
@@ -527,7 +529,7 @@ export async function getActivityForRangeAsync(days: number): Promise<DailyActiv
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
-    const dateStr = d.toISOString().split("T")[0]
+    const dateStr = formatLocalDate(d)
     result.push(activityMap[dateStr] || { date: dateStr, practiceCount: 0, listenCount: 0, sentenceIds: [] })
   }
 
@@ -548,7 +550,7 @@ export function getActivityForRange(days: number): DailyActivity[] {
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(d.getDate() - i)
-    const dateStr = d.toISOString().split("T")[0]
+    const dateStr = formatLocalDate(d)
     result.push(activityCache[dateStr] || { date: dateStr, practiceCount: 0, listenCount: 0, sentenceIds: [] })
   }
 
