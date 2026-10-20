@@ -156,7 +156,7 @@ export function ThemedPages() {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
           {selectedTheme.sentences.map((sentence) => {
             const progress = progressMap[sentence.id] || getProgress(sentence.id)
             const wide = isSentenceLong(sentence.german)
@@ -191,7 +191,7 @@ export function ThemedPages() {
       <p className="text-sm text-muted-foreground px-1">
         Explore 240 German sentences across 10 themed categories.
       </p>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {themes.map((theme) => {
           const stats = getThemeStats(theme.sentences.map((s) => s.id))
           const Icon = ICON_MAP[theme.icon] || Hash

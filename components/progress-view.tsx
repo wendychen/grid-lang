@@ -1,5 +1,6 @@
 "use client"
 
+// @ts-ignore React declarations are unavailable in this environment.
 import { useState, useEffect, useMemo, useRef } from "react"
 import {
   getStreakData,
@@ -9,8 +10,45 @@ import {
   type DailyActivity,
 } from "@/lib/srs"
 import { getAllSentences } from "@/lib/sentences"
-import { Flame, Target, Volume2, RotateCw } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { calculateProgressSummary, type FamiliarityBucket, type ProgressStats } from "@/lib/progress-stats"
+
+function Flame({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.4 0 2.5-1.1 2.5-2.5 0-1.2-.8-2-1.5-2.8-.7-.7-1.5-1.5-1.5-2.7 0-1 .5-2 1.5-3 0 2.5 2 3.5 3 5 .7 1 1 2 1 3.5a6 6 0 1 1-12 0c0-2.5 1.1-4.7 3.5-6.5-.3 2.5.2 3.7 1 4.5Z" />
+    </svg>
+  )
+}
+
+function Target({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  )
+}
+
+function Volume2({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 5 6 9H2v6h4l5 4V5Z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M19 5a10 10 0 0 1 0 14" />
+    </svg>
+  )
+}
+
+// Provide JSX's global intrinsic element types for TypeScript.
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elementName: string]: any
+    }
+  }
+}
 
 function parseTaipeiDate(dateKey: string): Date {
   const [year, month, day] = dateKey.split("-").map(Number)
@@ -28,7 +66,7 @@ function Heatmap365({ activity }: { activity: DailyActivity[] }) {
     let currentWeek: DailyActivity[] = []
 
     for (let i = 0; i < activity.length; i++) {
-      const dayOfWeek = parseTaipeiDate(activity[i].date).getDay()
+      const dayOfWeek = parseTaipeiDate(activity[i].date).getUTCDay()
       // Convert to Monday-start: Mon=0, Tue=1, ... Sun=6
       const adjusted = dayOfWeek === 0 ? 6 : dayOfWeek - 1
 
@@ -72,11 +110,11 @@ function Heatmap365({ activity }: { activity: DailyActivity[] }) {
     for (let w = 0; w < weeks.length; w++) {
       for (const day of weeks[w]) {
         if (!day.date) continue
-        const month = parseTaipeiDate(day.date).getMonth()
+        const month = parseTaipeiDate(day.date).getUTCMonth()
         if (month !== lastMonth) {
           lastMonth = month
           labels.push({
-            label: parseTaipeiDate(day.date).toLocaleDateString("en-US", { month: "short" }),
+            label: parseTaipeiDate(day.date).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }),
             weekIndex: w,
           })
           break
@@ -108,81 +146,85 @@ function Heatmap365({ activity }: { activity: DailyActivity[] }) {
   const dayLabels = ["Mon", "", "Wed", "", "Fri", "", ""]
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex gap-1">
-        {/* Day labels */}
-        <div className="flex flex-col gap-[3px] shrink-0 pr-1">
-          <div className="h-3" /> {/* spacer for month row */}
-          {dayLabels.map((label, i) => (
-            <div key={i} className="h-[11px] flex items-center">
-              <span className="text-[9px] text-muted-foreground leading-none w-6 text-right">
-                {label}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Scrollable grid */}
-        <div ref={scrollRef} className="overflow-x-auto flex-1 scrollbar-thin">
-          <div className="inline-flex flex-col gap-0">
-            {/* Month labels row */}
-            <div className="flex gap-[3px] h-3 mb-[3px]">
-              {weeks.map((_, w) => {
-                const monthLabel = monthLabels.find((m) => m.weekIndex === w)
-                return (
-                  <div key={w} className="w-[11px] shrink-0 flex items-center">
-                    {monthLabel && (
-                      <span className="text-[9px] text-muted-foreground leading-none whitespace-nowrap">
-                        {monthLabel.label}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Day rows */}
-            {Array.from({ length: 7 }).map((_, dayIndex) => (
-              <div key={dayIndex} className="flex gap-[3px]">
-                {weeks.map((week, w) => {
-                  const day = week[dayIndex]
-                  if (!day) {
-                    return <div key={w} className="w-[11px] h-[11px] shrink-0" />
-                  }
-
-                  const total = day.practiceCount + day.listenCount
-                  const tooltipText = day.date
-                    ? `${parseTaipeiDate(day.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}: ${total} activities (${day.practiceCount}p, ${day.listenCount}l)`
-                    : ""
-
-                  return (
-                    <div
-                      key={w}
-                      className={cn(
-                        "w-[11px] h-[11px] rounded-[2px] shrink-0 transition-colors",
-                        getCellColor(day)
-                      )}
-                      title={tooltipText}
-                    />
-                  )
-                })}
+      <div className="flex flex-col gap-1">
+        <div className="flex gap-1">
+          {/* Day labels */}
+          <div className="flex flex-col gap-[3px] shrink-0 pr-1">
+            <div className="h-3" /> {/* spacer for month row */}
+            {dayLabels.map((label, i) => (
+              <div key={i} className="h-[11px] flex items-center">
+                <span className="text-[9px] text-muted-foreground leading-none w-6 text-right">
+                  {label}
+                </span>
               </div>
             ))}
           </div>
+
+          {/* Scrollable grid */}
+          <div ref={scrollRef} className="min-w-0 flex-1 overflow-x-auto scrollbar-thin">
+            <div className="inline-flex flex-col gap-0">
+              {/* Month labels row */}
+              <div className="flex gap-[3px] h-3 mb-[3px]">
+                {weeks.map((_: any, w: any) => {
+                  const monthLabel = monthLabels.find((m: { weekIndex: any }) => m.weekIndex === w)
+                  return (
+                    <div key={w} className="w-[11px] shrink-0 flex items-center">
+                      {monthLabel && (
+                        <span className="text-[9px] text-muted-foreground leading-none whitespace-nowrap">
+                          {monthLabel.label}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Day rows */}
+              {Array.from({ length: 7 }).map((_, dayIndex) => (
+                <div key={dayIndex} className="flex gap-[3px]">
+                  {weeks.map((week: any[], w: any) => {
+                    const day = week[dayIndex]
+                    if (!day) {
+                      return <div key={w} className="w-[11px] h-[11px] shrink-0" />
+                    }
+
+                    const total = day.practiceCount + day.listenCount
+                    const tooltipText = day.date
+                      ? `${parseTaipeiDate(day.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        timeZone: "UTC",
+                      })}: ${total} activities (${day.practiceCount}p, ${day.listenCount}l)`
+                      : ""
+
+                    return (
+                      <div
+                        key={w}
+                        className={cn(
+                          "w-[11px] h-[11px] rounded-[2px] shrink-0 transition-colors",
+                          getCellColor(day)
+                        )}
+                        title={tooltipText}
+                      />
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-1.5 justify-end pt-1">
+          <span className="text-[9px] text-muted-foreground">Less</span>
+          <div className="w-[11px] h-[11px] rounded-[2px] bg-secondary" />
+          <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/30" />
+          <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/50" />
+          <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/75" />
+          <div className="w-[11px] h-[11px] rounded-[2px] bg-primary" />
+          <span className="text-[9px] text-muted-foreground">More</span>
         </div>
       </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-1.5 justify-end pt-1">
-        <span className="text-[9px] text-muted-foreground">Less</span>
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-secondary" />
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/30" />
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/50" />
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-primary/75" />
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-primary" />
-        <span className="text-[9px] text-muted-foreground">More</span>
-      </div>
-    </div>
   )
 }
 
@@ -238,7 +280,7 @@ export function ProgressView() {
     lastPracticeDate: null,
     practiceDays: [],
   })
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<ProgressStats>({
     totalSentences: 0,
     learned: 0,
     totalReps: 0,
@@ -246,9 +288,7 @@ export function ProgressView() {
     mastered: 0,
   })
   const [activity, setActivity] = useState<DailyActivity[]>([])
-  const [familiarityBuckets, setFamiliarityBuckets] = useState<
-    { label: string; count: number; color: string }[]
-  >([])
+  const [familiarityBuckets, setFamiliarityBuckets] = useState<FamiliarityBucket[]>([])
 
   useEffect(() => {
     setStreak(getStreakData())
@@ -256,54 +296,9 @@ export function ProgressView() {
     const allSentences = getAllSentences()
     const allProgress = getAllProgress()
 
-    let learned = 0
-    let totalReps = 0
-    let totalListens = 0
-    let mastered = 0
-
-    // 10-level familiarity buckets
-    const levels = [
-      { label: "New",  min: 0,  max: 0,  color: "hsl(215, 10%, 80%)" },
-      { label: "Lv 1", min: 1,  max: 1,  color: "hsl(200, 80%, 78%)" },
-      { label: "Lv 2", min: 2,  max: 3,  color: "hsl(200, 80%, 68%)" },
-      { label: "Lv 3", min: 4,  max: 5,  color: "hsl(200, 65%, 58%)" },
-      { label: "Lv 4", min: 6,  max: 8,  color: "hsl(190, 60%, 50%)" },
-      { label: "Lv 5", min: 9,  max: 12, color: "hsl(170, 55%, 46%)" },
-      { label: "Lv 6", min: 13, max: 16, color: "hsl(152, 55%, 46%)" },
-      { label: "Lv 7", min: 17, max: 20, color: "hsl(142, 55%, 45%)" },
-      { label: "Lv 8", min: 21, max: 30, color: "hsl(80, 60%, 48%)" },
-      { label: "Lv 9", min: 31, max: Infinity, color: "hsl(45, 90%, 50%)" },
-    ]
-    const bucketCounts = levels.map(() => 0)
-
-    for (const s of allSentences) {
-      const prog = allProgress[s.id]
-      const reps = prog?.reps ?? 0
-      if (reps > 0) {
-        learned++
-        totalReps += prog.reps
-        totalListens += prog.listens
-        if (reps >= 20) mastered++
-      }
-      for (let i = levels.length - 1; i >= 0; i--) {
-        if (reps >= levels[i].min && reps <= levels[i].max) {
-          bucketCounts[i]++
-          break
-        }
-      }
-    }
-
-    setStats({
-      totalSentences: allSentences.length,
-      learned,
-      totalReps,
-      totalListens,
-      mastered,
-    })
-
-    setFamiliarityBuckets(
-      levels.map((lvl, i) => ({ label: lvl.label, count: bucketCounts[i], color: lvl.color }))
-    )
+    const summary = calculateProgressSummary(allSentences, allProgress)
+    setStats(summary.stats)
+    setFamiliarityBuckets(summary.familiarityBuckets)
 
     // Load 365-day activity
     setActivity(getActivityForRange(365))

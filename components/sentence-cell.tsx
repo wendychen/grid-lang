@@ -80,11 +80,11 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
   return (
     <div
       className={cn(
-        "relative rounded-lg border transition-all duration-200 cursor-pointer select-none",
+        "relative w-full rounded-lg border transition-all duration-200 cursor-pointer select-none",
         "hover:shadow-md active:scale-[0.98] min-h-[7.5rem]",
         colorClass,
         expanded && "ring-2 ring-primary/30 shadow-lg",
-        wide && "col-span-2"
+        wide && "sm:col-span-2"
       )}
       onClick={handleToggle}
       role="button"
