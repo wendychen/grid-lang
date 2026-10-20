@@ -405,62 +405,65 @@ export function GraphView() {
   const handleFit = () => cyRef.current?.fit(undefined, 40)
 
   return (
-    <div className="flex flex-col gap-0 h-[calc(100vh-8rem)] -mx-4 lg:-mx-8">
+    <div className="flex flex-col gap-0 h-[calc(100dvh-8rem)] -mx-4 lg:-mx-8">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 lg:px-8 py-2 border-b border-border bg-background">
-        <div className="flex items-center gap-1 rounded-lg bg-muted p-0.5">
+    <div className="flex flex-wrap items-center gap-2 px-4 lg:px-8 py-2 border-b border-border bg-background">
+      <div className="flex shrink-0 items-center gap-1 rounded-lg bg-muted p-0.5">
           <button
             onClick={() => setMode("explore")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+          aria-label="Explore mode"
+          className={cn(
+            "flex min-h-9 items-center gap-1.5 rounded-md px-2 sm:px-3 py-1.5 text-xs font-medium transition-colors",
               mode === "explore"
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
             <MousePointer2 className="w-3.5 h-3.5" />
-            Explore
+            <span className="hidden sm:inline">Explore</span>
           </button>
           <button
             onClick={() => setMode("connect")}
+            aria-label="Connect mode"
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+              "flex min-h-9 items-center gap-1.5 rounded-md px-2 sm:px-3 py-1.5 text-xs font-medium transition-colors",
               mode === "connect"
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Link2 className="w-3.5 h-3.5" />
-            Connect
+            <span className="hidden sm:inline">Connect</span>
           </button>
           <button
             onClick={() => {
               setMode("add")
               setShowAddForm(true)
             }}
+            aria-label="Add node mode"
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+              "flex min-h-9 items-center gap-1.5 rounded-md px-2 sm:px-3 py-1.5 text-xs font-medium transition-colors",
               mode === "add"
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Plus className="w-3.5 h-3.5" />
-            Add Node
+            <span className="hidden sm:inline">Add Node</span>
           </button>
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <span className="text-xs text-muted-foreground mr-2">
+          <span className="mr-2 hidden text-xs text-muted-foreground sm:inline">
             {sentences.length} nodes &middot; {edges.length} edges
           </span>
-          <button onClick={handleZoomIn} className="p-1.5 rounded-md hover:bg-muted transition-colors" aria-label="Zoom in">
+          <button onClick={handleZoomIn} className="flex min-h-9 min-w-9 items-center justify-center rounded-md p-1.5 hover:bg-muted transition-colors" aria-label="Zoom in">
             <ZoomIn className="w-4 h-4 text-muted-foreground" />
           </button>
-          <button onClick={handleZoomOut} className="p-1.5 rounded-md hover:bg-muted transition-colors" aria-label="Zoom out">
+          <button onClick={handleZoomOut} className="flex min-h-9 min-w-9 items-center justify-center rounded-md p-1.5 hover:bg-muted transition-colors" aria-label="Zoom out">
             <ZoomOut className="w-4 h-4 text-muted-foreground" />
           </button>
-          <button onClick={handleFit} className="p-1.5 rounded-md hover:bg-muted transition-colors" aria-label="Fit to view">
+          <button onClick={handleFit} className="flex min-h-9 min-w-9 items-center justify-center rounded-md p-1.5 hover:bg-muted transition-colors" aria-label="Fit to view">
             <Maximize2 className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
