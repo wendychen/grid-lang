@@ -37,11 +37,22 @@ const DEFAULT_SETTINGS: AppSettings = {
   gridRows: 4,
 }
 
+const APP_TIME_ZONE = "Asia/Taipei"
+
 function formatLocalDate(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+function dateKeyToDate(dateKey: string): Date {
+  const [year, month, day] = dateKey.split("-").map(Number)
+  return new Date(Date.UTC(year, month - 1, day))
 }
 
 function getToday(): string {
@@ -136,8 +147,8 @@ export async function practiceSentenceAsync(id: string): Promise<SentenceProgres
   prog.interval = Math.min(365, Math.max(1, Math.round(prog.interval * prog.ease)))
 
   // Set next due date
-  const nextDue = new Date(today)
-  nextDue.setDate(nextDue.getDate() + prog.interval)
+  const nextDue = dateKeyToDate(today)
+  nextDue.setUTCDate(nextDue.getUTCDate() + prog.interval)
   prog.dueDate = formatLocalDate(nextDue)
 
   // Push to end of queue
@@ -210,8 +221,8 @@ export function practiceSentence(id: string): SentenceProgress {
     prog.streak = 1
   }
   prog.interval = Math.min(365, Math.max(1, Math.round(prog.interval * prog.ease)))
-  const nextDue = new Date(today)
-  nextDue.setDate(nextDue.getDate() + prog.interval)
+  const nextDue = dateKeyToDate(today)
+  nextDue.setUTCDate(nextDue.getUTCDate() + prog.interval)
   prog.dueDate = formatLocalDate(nextDue)
   prog.position += 100
   prog.lastPracticed = today
@@ -510,8 +521,8 @@ async function recordDailyActivityAsync(sentenceId: string, type: "practice" | "
   activityCache[today] = entry
 
   // Cleanup old entries
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - 400)
+  const cutoff = dateKeyToDate(getToday())
+  cutoff.setUTCDate(cutoff.getUTCDate() - 400)
   const cutoffStr = formatLocalDate(cutoff)
   await db.activity.where("date").below(cutoffStr).delete()
 }
@@ -524,11 +535,11 @@ export async function getActivityForRangeAsync(days: number): Promise<DailyActiv
   }
 
   const result: DailyActivity[] = []
-  const today = new Date()
+  const today = dateKeyToDate(getToday())
 
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
-    d.setDate(d.getDate() - i)
+    d.setUTCDate(d.getUTCDate() - i)
     const dateStr = formatLocalDate(d)
     result.push(activityMap[dateStr] || { date: dateStr, practiceCount: 0, listenCount: 0, sentenceIds: [] })
   }
@@ -545,11 +556,11 @@ export function setActivityCache(data: Record<string, DailyActivity>): void {
 
 export function getActivityForRange(days: number): DailyActivity[] {
   const result: DailyActivity[] = []
-  const today = new Date()
+  const today = dateKeyToDate(getToday())
 
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
-    d.setDate(d.getDate() - i)
+    d.setUTCDate(d.getUTCDate() - i)
     const dateStr = formatLocalDate(d)
     result.push(activityCache[dateStr] || { date: dateStr, practiceCount: 0, listenCount: 0, sentenceIds: [] })
   }
