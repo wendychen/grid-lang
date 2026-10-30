@@ -1,5 +1,6 @@
-# v0-grid-lang-pwa
+# grid-lang
 
+This project is for learning German with atomic learning approach.
 This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
 
 ## Built with v0
@@ -23,8 +24,6 @@ pnpm dev
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-## Learn More
 
 To learn more, take a look at the following resources:
 
