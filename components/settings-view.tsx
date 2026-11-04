@@ -5,8 +5,8 @@ import {
   getSettings,
   saveSettings,
   resetAllProgress,
-  exportAllData,
-  importAllData,
+  exportAllDataAsync,
+  importAllDataAsync,
   type AppSettings,
   type GridLangBackup,
 } from "@/lib/srs"
@@ -50,18 +50,23 @@ export function SettingsView() {
     setTimeout(() => setResetDone(false), 3000)
   }, [])
 
-  const handleExport = useCallback(() => {
-    const backup = exportAllData()
-    const json = JSON.stringify(backup, null, 2)
-    const blob = new Blob([json], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `gridlang-backup-${new Date().toISOString().split("T")[0]}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+  const handleExport = useCallback(async () => {
+    try {
+      const backup = await exportAllDataAsync()
+      const json = JSON.stringify(backup, null, 2)
+      const blob = new Blob([json], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `gridlang-backup-${new Date().toISOString().split("T")[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      setImportStatus("error")
+      setImportMessage("Unable to export backup data.")
+    }
   }, [])
 
   const handleImport = useCallback(() => {
@@ -73,12 +78,12 @@ export function SettingsView() {
       if (!file) return
 
       const reader = new FileReader()
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         try {
           const data = JSON.parse(ev.target?.result as string) as GridLangBackup
-          importAllData(data)
+          await importAllDataAsync(data)
           setImportStatus("success")
-          setImportMessage("Data imported successfully. Reload to see changes.")
+          setImportMessage("Data imported successfully. Practice history synced to the heatmap.")
           setSettings(getSettings())
           setTimeout(() => {
             setImportStatus("idle")

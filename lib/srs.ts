@@ -6,6 +6,7 @@ import {
   saveActivityFirestore,
   savePushedQueueFirestore,
 } from "./firestore"
+import { THEME_QUEUE_REORDER_REPS } from "./theme-queue"
 
 export type SentenceProgress = SentenceProgressEntity
 
@@ -151,8 +152,13 @@ export async function practiceSentenceAsync(id: string): Promise<SentenceProgres
   nextDue.setUTCDate(nextDue.getUTCDate() + prog.interval)
   prog.dueDate = formatLocalDate(nextDue)
 
-  // Push to end of queue
-  prog.position += 100
+  if (prog.reps === THEME_QUEUE_REORDER_REPS) {
+    const allProgress = await getAllProgressAsync()
+    allProgress[id] = prog
+    prog.position = getNextQueuePosition(allProgress, prog.position)
+  } else if (prog.reps < THEME_QUEUE_REORDER_REPS) {
+    prog.position += 100
+  }
   prog.lastPracticed = today
 
   await db.progress.put(prog)
@@ -177,6 +183,19 @@ export async function recordListenAsync(id: string): Promise<void> {
 // These are for backwards compatibility with sync components
 
 let progressCache: Record<string, SentenceProgress> = {}
+
+function getNextQueuePosition(
+  progressById: Record<string, SentenceProgress>,
+  currentPosition: number
+): number {
+  let maxPosition = currentPosition
+  for (const progress of Object.values(progressById)) {
+    if (Number.isFinite(progress.position)) {
+      maxPosition = Math.max(maxPosition, progress.position)
+    }
+  }
+  return maxPosition + 100
+}
 
 export function setProgressCache(data: Record<string, SentenceProgress>): void {
   progressCache = data
@@ -224,7 +243,11 @@ export function practiceSentence(id: string): SentenceProgress {
   const nextDue = dateKeyToDate(today)
   nextDue.setUTCDate(nextDue.getUTCDate() + prog.interval)
   prog.dueDate = formatLocalDate(nextDue)
-  prog.position += 100
+  if (prog.reps === THEME_QUEUE_REORDER_REPS) {
+    prog.position = getNextQueuePosition(progressCache, prog.position)
+  } else if (prog.reps < THEME_QUEUE_REORDER_REPS) {
+    prog.position += 100
+  }
   prog.lastPracticed = today
 
   // Fire async update
@@ -551,7 +574,7 @@ export async function getActivityForRangeAsync(days: number): Promise<DailyActiv
 let activityCache: Record<string, DailyActivity> = {}
 
 export function setActivityCache(data: Record<string, DailyActivity>): void {
-  activityCache = data
+  activityCache = buildActivityMap(data, progressCache, streakCache.practiceDays)
 }
 
 export function getActivityForRange(days: number): DailyActivity[] {
@@ -649,11 +672,93 @@ export interface GridLangBackup {
   progress: Record<string, SentenceProgress>
   settings: AppSettings
   streak: StreakData
-  activity: Record<string, DailyActivity>
+  activity?: Record<string, DailyActivity> | DailyActivity[]
+  dailyPracticeFrequency?: Record<string, number>
+  practiceDates?: string[]
   pushed: string[]
   graphEdges?: unknown[]
   customSentences?: unknown[]
   notebook?: unknown
+}
+
+function normalizeActivityDate(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const dateKey = value.trim().match(/^(\d{4}-\d{2}-\d{2})/)?.[1]
+  if (!dateKey) return null
+
+  const date = new Date(`${dateKey}T00:00:00.000Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === dateKey ? dateKey : null
+}
+
+function normalizeActivityCount(value: unknown): number {
+  const count = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0
+}
+
+function emptyDailyActivity(date: string): DailyActivity {
+  return { date, practiceCount: 0, listenCount: 0, sentenceIds: [] }
+}
+
+function buildActivityMap(
+  source: GridLangBackup["activity"] | Record<string, DailyActivity>,
+  progress: Record<string, SentenceProgress>,
+  practiceDays: string[] = [],
+  practiceDates: string[] = [],
+  dailyPracticeFrequency: Record<string, number> = {}
+): Record<string, DailyActivity> {
+  const activityMap: Record<string, DailyActivity> = {}
+  const sourceEntries: [string, Partial<DailyActivity>][] = Array.isArray(source)
+    ? source.map((entry, index) => [String(index), entry])
+    : Object.entries(source ?? {})
+
+  for (const [fallbackDate, raw] of sourceEntries) {
+    if (!raw || typeof raw !== "object") continue
+    const date = normalizeActivityDate(raw.date) ?? normalizeActivityDate(fallbackDate)
+    if (!date) continue
+
+    const existing = activityMap[date] ?? emptyDailyActivity(date)
+    const sentenceIds = Array.isArray(raw.sentenceIds)
+      ? raw.sentenceIds.filter((id): id is string => typeof id === "string")
+      : []
+    activityMap[date] = {
+      date,
+      practiceCount: Math.max(existing.practiceCount, normalizeActivityCount(raw.practiceCount)),
+      listenCount: Math.max(existing.listenCount, normalizeActivityCount(raw.listenCount)),
+      sentenceIds: [...new Set([...existing.sentenceIds, ...sentenceIds])],
+    }
+  }
+
+  for (const [rawDate, count] of Object.entries(dailyPracticeFrequency)) {
+    const date = normalizeActivityDate(rawDate)
+    if (!date) continue
+    const entry = activityMap[date] ?? (activityMap[date] = emptyDailyActivity(date))
+    entry.practiceCount = Math.max(entry.practiceCount, normalizeActivityCount(count))
+  }
+
+  const progressByDate: Record<string, { count: number; sentenceIds: string[] }> = {}
+  for (const [id, sentenceProgress] of Object.entries(progress ?? {})) {
+    const date = normalizeActivityDate(sentenceProgress?.lastPracticed)
+    if (!date || sentenceProgress.reps <= 0) continue
+
+    const entry = progressByDate[date] ?? (progressByDate[date] = { count: 0, sentenceIds: [] })
+    entry.count += 1
+    entry.sentenceIds.push(sentenceProgress.id || id)
+  }
+
+  for (const [date, practice] of Object.entries(progressByDate)) {
+    const entry = activityMap[date] ?? (activityMap[date] = emptyDailyActivity(date))
+    entry.practiceCount = Math.max(entry.practiceCount, practice.count)
+    entry.sentenceIds = [...new Set([...entry.sentenceIds, ...practice.sentenceIds])]
+  }
+
+  for (const rawDate of [...practiceDays, ...practiceDates]) {
+    const date = normalizeActivityDate(rawDate)
+    if (!date) continue
+    const entry = activityMap[date] ?? (activityMap[date] = emptyDailyActivity(date))
+    if (entry.practiceCount === 0) entry.practiceCount = 1
+  }
+
+  return activityMap
 }
 
 export async function exportAllDataAsync(): Promise<GridLangBackup> {
@@ -661,10 +766,11 @@ export async function exportAllDataAsync(): Promise<GridLangBackup> {
   const settings = await getSettingsAsync()
   const streak = await getStreakDataAsync()
   const activityArr = await db.activity.toArray()
-  const activity: Record<string, DailyActivity> = {}
-  for (const a of activityArr) {
-    activity[a.date] = a
+  const storedActivity: Record<string, DailyActivity> = {}
+  for (const entry of activityArr) {
+    storedActivity[entry.date] = entry
   }
+  const activity = buildActivityMap(storedActivity, progress, streak.practiceDays)
   const pushed = await getPushedQueueAsync()
   const graphEdges = await db.edges.toArray()
   const customSentences = await db.customSentences.toArray()
@@ -681,6 +787,9 @@ export async function exportAllDataAsync(): Promise<GridLangBackup> {
     settings,
     streak,
     activity,
+    dailyPracticeFrequency: Object.fromEntries(
+      Object.entries(activity).map(([date, entry]) => [date, entry.practiceCount])
+    ),
     pushed,
     graphEdges,
     customSentences,
@@ -689,14 +798,17 @@ export async function exportAllDataAsync(): Promise<GridLangBackup> {
 }
 
 export function exportAllData(): GridLangBackup {
-  // Sync version - returns cached data
+  const activity = buildActivityMap(activityCache, progressCache, streakCache.practiceDays)
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
     progress: progressCache,
     settings: settingsCache,
     streak: streakCache,
-    activity: {},
+    activity,
+    dailyPracticeFrequency: Object.fromEntries(
+      Object.entries(activity).map(([date, entry]) => [date, entry.practiceCount])
+    ),
     pushed: pushedQueueCache,
   }
 }
@@ -705,6 +817,21 @@ export async function importAllDataAsync(backup: GridLangBackup): Promise<void> 
   if (!backup || backup.version !== 1) {
     throw new Error("Invalid backup file format")
   }
+
+  const progress = backup.progress ?? {}
+  const activity = buildActivityMap(
+    backup.activity,
+    progress,
+    backup.streak?.practiceDays ?? [],
+    backup.practiceDates,
+    backup.dailyPracticeFrequency
+  )
+  const hasActivitySource =
+    backup.activity !== undefined ||
+    backup.dailyPracticeFrequency !== undefined ||
+    Boolean(backup.practiceDates?.length) ||
+    Boolean(backup.streak?.practiceDays?.length) ||
+    Object.values(progress).some((entry) => normalizeActivityDate(entry?.lastPracticed) !== null)
 
   if (backup.progress) {
     await db.progress.clear()
@@ -722,9 +849,9 @@ export async function importAllDataAsync(backup: GridLangBackup): Promise<void> 
     await db.streak.put({ id: "streak", ...backup.streak })
   }
 
-  if (backup.activity) {
+  if (hasActivitySource) {
     await db.activity.clear()
-    const entries = Object.values(backup.activity)
+    const entries = Object.values(activity)
     if (entries.length > 0) {
       await db.activity.bulkPut(entries)
     }
@@ -751,6 +878,12 @@ export async function importAllDataAsync(backup: GridLangBackup): Promise<void> 
       await db.notebook.bulkPut(entries)
     }
   }
+
+  if (backup.progress) setProgressCache(backup.progress)
+  if (backup.settings) setSettingsCache(backup.settings)
+  if (backup.streak) setStreakCache(backup.streak)
+  if (backup.pushed) setPushedQueueCache(backup.pushed)
+  if (hasActivitySource) activityCache = activity
 }
 
 export function importAllData(backup: GridLangBackup): void {
