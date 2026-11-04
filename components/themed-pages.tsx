@@ -14,6 +14,7 @@ import {
   pushToTodayQueue,
   type SentenceProgress,
 } from "@/lib/srs"
+import { orderThemeQueue } from "@/lib/theme-queue"
 import {
   Hand,
   Utensils,
@@ -126,6 +127,11 @@ export function ThemedPages() {
   if (selectedTheme) {
     const stats = getThemeStats(selectedTheme.sentences.map((s) => s.id))
     const Icon = ICON_MAP[selectedTheme.icon] || BookOpen
+    const themeProgress: Record<string, SentenceProgress> = {}
+    for (const sentence of selectedTheme.sentences) {
+      themeProgress[sentence.id] = progressMap[sentence.id] || getProgress(sentence.id)
+    }
+    const orderedSentences = orderThemeQueue(selectedTheme.sentences, themeProgress)
 
     return (
       <div className="flex flex-col gap-4">
@@ -157,7 +163,7 @@ export function ThemedPages() {
 
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5">
-          {selectedTheme.sentences.map((sentence) => {
+          {orderedSentences.map((sentence) => {
             const progress = progressMap[sentence.id] || getProgress(sentence.id)
             const wide = isSentenceLong(sentence.german)
             return (
