@@ -1,4 +1,11 @@
-import { db, type SentenceProgressEntity, type SettingsEntity, type StreakEntity, type DailyActivityEntity } from "./db"
+import {
+  db,
+  type DailyActivityEntity,
+  type SentenceProgressEntity,
+  type SettingsEntity,
+  type StreakEntity,
+  type ThemeCardOverrideEntity,
+} from "./db"
 import {
   saveProgressFirestore,
   saveSettingsFirestore,
@@ -6,6 +13,7 @@ import {
   saveActivityFirestore,
   savePushedQueueFirestore,
 } from "./firestore"
+import { normalizeThemeCardOverride } from "./theme-card-overrides"
 import { THEME_QUEUE_REORDER_REPS } from "./theme-queue"
 
 export type SentenceProgress = SentenceProgressEntity
@@ -679,6 +687,7 @@ export interface GridLangBackup {
   graphEdges?: unknown[]
   customSentences?: unknown[]
   notebook?: unknown
+  themeCardOverrides?: ThemeCardOverrideEntity[]
 }
 
 function normalizeActivityDate(value: unknown): string | null {
@@ -775,6 +784,7 @@ export async function exportAllDataAsync(): Promise<GridLangBackup> {
   const graphEdges = await db.edges.toArray()
   const customSentences = await db.customSentences.toArray()
   const notebookArr = await db.notebook.toArray()
+  const themeCardOverrides = await db.themeCardOverrides.toArray()
   const notebook: Record<string, unknown> = {}
   for (const n of notebookArr) {
     notebook[n.date] = n
@@ -794,6 +804,7 @@ export async function exportAllDataAsync(): Promise<GridLangBackup> {
     graphEdges,
     customSentences,
     notebook,
+    themeCardOverrides,
   }
 }
 
@@ -876,6 +887,21 @@ export async function importAllDataAsync(backup: GridLangBackup): Promise<void> 
     const entries = Object.values(backup.notebook as Record<string, any>)
     if (entries.length > 0) {
       await db.notebook.bulkPut(entries)
+    }
+  }
+
+  if (backup.themeCardOverrides !== undefined) {
+    if (!Array.isArray(backup.themeCardOverrides)) {
+      throw new Error("Invalid theme card data")
+    }
+
+    const themeCardOverrides = backup.themeCardOverrides
+      .map(normalizeThemeCardOverride)
+      .filter((entry): entry is ThemeCardOverrideEntity => entry !== null)
+
+    await db.themeCardOverrides.clear()
+    if (themeCardOverrides.length > 0) {
+      await db.themeCardOverrides.bulkPut(themeCardOverrides)
     }
   }
 
