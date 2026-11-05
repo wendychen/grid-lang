@@ -7,6 +7,7 @@ import { Volume2 } from "lucide-react"
 import { type SentenceProgress, getProgress, getColorClass } from "@/lib/srs"
 import { speakGerman } from "@/lib/tts"
 import type { Sentence } from "@/lib/sentences"
+import type { ThemeCardImage } from "@/lib/theme-card-images"
 import { cn } from "@/lib/utils"
 
 // Sentences > 30 chars are considered "long" and should span 2 grid columns
@@ -23,9 +24,10 @@ interface SentenceCellProps {
   wide?: boolean
   secretImage?: string
   onSecretFound?: () => void
+  image?: ThemeCardImage
 }
 
-export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, wide, secretImage, onSecretFound }: SentenceCellProps) {
+export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, wide, secretImage, onSecretFound, image }: SentenceCellProps) {
   const [expanded, setExpanded] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
@@ -145,6 +147,17 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
             />
           </button>
         </div>
+
+        {image && (
+          <img
+            src={image.url}
+            alt={`Illustration for ${sentence.german}`}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+            className="mt-3 aspect-[16/9] w-full rounded-md object-cover"
+          />
+        )}
 
         {/* Bottom area: toggles between translation and practice info */}
         <div className="mt-auto pt-2">

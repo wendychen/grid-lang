@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from "dexie"
+import type { ThemeCardImage } from "./theme-card-images"
 
 // ===== Database Entities =====
 
@@ -92,6 +93,17 @@ export interface QuizStatsEntity {
   totalAnswered: number
 }
 
+export interface ThemeCardOverrideEntity {
+  id: string
+  themeId: string
+  sentenceId: string
+  german?: string
+  english?: string
+  phonetic?: string
+  image?: ThemeCardImage
+  updatedAt: string
+}
+
 // ===== Dexie Database Class =====
 
 class GridLangDB extends Dexie {
@@ -104,6 +116,7 @@ class GridLangDB extends Dexie {
   customSentences!: EntityTable<CustomSentenceEntity, "id">
   notebook!: EntityTable<NotebookEntryEntity, "date">
   quizStats!: EntityTable<QuizStatsEntity, "id">
+  themeCardOverrides!: EntityTable<ThemeCardOverrideEntity, "id">
 
   constructor() {
     super("GridLangDB")
@@ -123,6 +136,10 @@ class GridLangDB extends Dexie {
     // carrying all existing tables and data forward unchanged.
     this.version(2).stores({
       quizStats: "id",
+    })
+
+    this.version(3).stores({
+      themeCardOverrides: "id, themeId, sentenceId",
     })
   }
 }

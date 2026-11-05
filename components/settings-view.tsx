@@ -83,7 +83,7 @@ export function SettingsView() {
           const data = JSON.parse(ev.target?.result as string) as GridLangBackup
           await importAllDataAsync(data)
           setImportStatus("success")
-          setImportMessage("Data imported successfully. Practice history synced to the heatmap.")
+          setImportMessage("Data imported successfully. Card edits and image references were restored.")
           setSettings(getSettings())
           setTimeout(() => {
             setImportStatus("idle")
