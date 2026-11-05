@@ -131,18 +131,24 @@ export function ThemeSentenceEditor({
       </fieldset>
 
       <div className="flex flex-col gap-2 rounded-md border border-dashed border-border p-3">
-        {image ? (
-          <img
-            src={image.url}
-            alt={`Image preview for ${sentence.german}`}
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            className="aspect-[16/9] w-full rounded-md object-cover"
-          />
-        ) : (
-          <p className="text-xs text-muted-foreground">No image attached. Upload one to show it on this card.</p>
-        )}
+        <div className="aspect-[9/16] w-full overflow-hidden rounded-md bg-muted/30">
+          {image ? (
+            <img
+              src={image.url}
+              alt={`Image preview for ${sentence.german}`}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center p-4 text-center">
+              <p className="text-xs text-muted-foreground">
+                No image attached. Upload one to show it on this card.
+              </p>
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button
