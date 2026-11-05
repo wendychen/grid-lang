@@ -10,9 +10,70 @@ import type { Sentence } from "@/lib/sentences"
 import type { ThemeCardImage } from "@/lib/theme-card-images"
 import { cn } from "@/lib/utils"
 
-// Sentences > 30 chars are considered "long" and should span 2 grid columns
-export function isSentenceLong(german: string): boolean {
-  return german.length > 30
+type ImageBottomTone = "dark" | "light"
+
+function detectImageBottomTone(image: HTMLImageElement): ImageBottomTone | undefined {
+  const imageWidth = image.naturalWidth
+  const imageHeight = image.naturalHeight
+  if (!imageWidth || !imageHeight) return undefined
+
+  const frameAspectRatio = 9 / 16
+  let sourceX = 0
+  let sourceY = 0
+  let sourceWidth = imageWidth
+  let sourceHeight = imageHeight
+
+  if (imageWidth / imageHeight > frameAspectRatio) {
+    sourceWidth = imageHeight * frameAspectRatio
+    sourceX = (imageWidth - sourceWidth) / 2
+  } else {
+    sourceHeight = imageWidth / frameAspectRatio
+    sourceY = (imageHeight - sourceHeight) / 2
+  }
+
+  const sampleHeight = sourceHeight * 0.2
+  const canvas = document.createElement("canvas")
+  canvas.width = 24
+  canvas.height = 8
+  const context = canvas.getContext("2d", { willReadFrequently: true })
+  if (!context) return undefined
+
+  try {
+    context.drawImage(
+      image,
+      sourceX,
+      sourceY + sourceHeight - sampleHeight,
+      sourceWidth,
+      sampleHeight,
+      0,
+      0,
+      canvas.width,
+      canvas.height,
+    )
+
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height)
+    const linearize = (value: number) => {
+      const normalized = value / 255
+      return normalized <= 0.04045
+        ? normalized / 12.92
+        : ((normalized + 0.055) / 1.055) ** 2.4
+    }
+    let totalLuminance = 0
+
+    for (let index = 0; index < data.length; index += 4) {
+      const alpha = data[index + 3] / 255
+      const luminance =
+        0.2126 * linearize(data[index]) +
+        0.7152 * linearize(data[index + 1]) +
+        0.0722 * linearize(data[index + 2])
+      totalLuminance += luminance * alpha + 0.5 * (1 - alpha)
+    }
+
+    const averageLuminance = totalLuminance / (data.length / 4)
+    return averageLuminance < 0.45 ? "dark" : "light"
+  } catch {
+    return undefined
+  }
 }
 
 interface SentenceCellProps {
@@ -21,17 +82,38 @@ interface SentenceCellProps {
   ttsSpeed: number
   onPractice: (id: string) => void
   onListen: (id: string) => void
-  wide?: boolean
   secretImage?: string
   onSecretFound?: () => void
   image?: ThemeCardImage
 }
 
-export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, wide, secretImage, onSecretFound, image }: SentenceCellProps) {
+export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListen, secretImage, onSecretFound, image }: SentenceCellProps) {
   const [expanded, setExpanded] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
+  const [imageBottomToneState, setImageBottomToneState] = useState<{
+    url: string
+    tone: ImageBottomTone
+  } | null>(null)
 
+  const imageUrl = image?.url
+  const imageBottomTone =
+    imageBottomToneState && imageBottomToneState.url === imageUrl
+      ? imageBottomToneState.tone
+      : "dark"
+  const handleImageLoad = useCallback(
+    (event: React.SyntheticEvent<HTMLImageElement>) => {
+      if (!imageUrl) return
+      const tone = detectImageBottomTone(event.currentTarget)
+      if (tone) setImageBottomToneState({ url: imageUrl, tone })
+    },
+    [imageUrl],
+  )
+  const longestGermanWordLength = sentence.german
+    .trim()
+    .split(/\s+/)
+    .reduce((longest, word) => Math.max(longest, word.length), 1)
+  const titleFontSizeContainerRatio = Math.min(15.6, 156 / longestGermanWordLength)
   const colorClass = getColorClass(progress.reps)
 
   // Darken background based on listen count: each listen adds opacity
@@ -85,8 +167,7 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
         "relative w-full rounded-lg border transition-all duration-200 cursor-pointer select-none",
         "hover:shadow-md active:scale-[0.98] min-h-[7.5rem]",
         colorClass,
-        expanded && "ring-2 ring-primary/30 shadow-lg",
-        wide && "sm:col-span-2"
+        expanded && "ring-2 ring-primary/30 shadow-lg"
       )}
       onClick={handleToggle}
       role="button"
@@ -123,41 +204,79 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
         </div>
       )}
 
-      {/* Fixed-height content area */}
-      <div className="relative z-10 p-3.5 flex flex-col justify-between h-full">
-        {/* Top row: German sentence + speaker button */}
-        <div className="flex items-start justify-between gap-3">
-          <p className="flex-1 min-w-0 font-semibold text-sm leading-snug text-cell-foreground text-pretty">
-            {sentence.german}
-          </p>
-          <button
-            onClick={handleSpeak}
-            className={cn(
-              "shrink-0 flex items-center justify-center w-8 h-8 rounded-full transition-all",
-              "bg-foreground/5 hover:bg-foreground/10 active:bg-foreground/15",
-              speaking && "animate-pulse bg-primary/20"
-            )}
-            aria-label={`Play pronunciation of ${sentence.german}`}
+      {/* Card content */}
+      <div className="relative z-10 flex h-full flex-col p-3.5">
+        {image ? (
+          <div
+            className="relative aspect-[9/16] w-full overflow-hidden rounded-md"
+            style={{ containerType: "inline-size" }}
           >
-            <Volume2
-              className={cn(
-                "w-4 h-4",
-                speaking ? "text-primary" : "text-cell-muted"
-              )}
-            />
-          </button>
-        </div>
-
-        {image && (
-          <div className="mt-3 aspect-[9/16] w-full overflow-hidden rounded-md">
             <img
+              crossOrigin="anonymous"
               src={image.url}
-              alt={`Illustration for ${sentence.german}`}
+              alt=""
               loading="lazy"
               decoding="async"
               referrerPolicy="no-referrer"
-              className="h-full w-full object-cover"
+              onLoad={handleImageLoad}
+              className="absolute inset-0 h-full w-full object-cover"
             />
+            <div
+              aria-hidden="true"
+              className={cn(
+                "pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t to-transparent",
+                imageBottomTone === "dark"
+                  ? "from-black/75 via-black/20"
+                  : "from-white/80 via-white/10",
+              )}
+            />
+            <p
+              className={cn(
+                "pointer-events-none absolute inset-x-3 bottom-[9%] z-10 text-center font-extrabold leading-[0.95] tracking-tight text-balance",
+                imageBottomTone === "dark" ? "text-white" : "text-slate-950",
+              )}
+              style={{
+                fontSize: `clamp(2rem, ${titleFontSizeContainerRatio}cqw, 3.25rem)`,
+                textShadow:
+                  imageBottomTone === "dark"
+                    ? "0 2px 10px rgba(0, 0, 0, 0.8)"
+                    : "0 2px 10px rgba(255, 255, 255, 0.85)",
+              }}
+            >
+              {sentence.german}
+            </p>
+            <button
+              onClick={handleSpeak}
+              className={cn(
+                "absolute right-3 top-3 z-20 flex size-9 items-center justify-center rounded-full border border-white/25 bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60",
+                speaking && "animate-pulse bg-primary text-primary-foreground",
+              )}
+              aria-label={`Play pronunciation of ${sentence.german}`}
+            >
+              <Volume2 className="size-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between gap-3">
+            <p className="flex-1 min-w-0 font-semibold text-sm leading-snug text-cell-foreground text-pretty">
+              {sentence.german}
+            </p>
+            <button
+              onClick={handleSpeak}
+              className={cn(
+                "shrink-0 flex items-center justify-center w-8 h-8 rounded-full transition-all",
+                "bg-foreground/5 hover:bg-foreground/10 active:bg-foreground/15",
+                speaking && "animate-pulse bg-primary/20"
+              )}
+              aria-label={`Play pronunciation of ${sentence.german}`}
+            >
+              <Volume2
+                className={cn(
+                  "w-4 h-4",
+                  speaking ? "text-primary" : "text-cell-muted"
+                )}
+              />
+            </button>
           </div>
         )}
 

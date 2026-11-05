@@ -5,7 +5,7 @@ import React from "react"
 import { useState, useCallback, useEffect, useRef } from "react"
 import { useLiveQuery } from "dexie-react-hooks"
 import { Button } from "@/components/ui/button"
-import { SentenceCell, isSentenceLong } from "@/components/sentence-cell"
+import { SentenceCell } from "@/components/sentence-cell"
 import { ThemeSentenceEditor } from "@/components/theme-sentence-editor"
 import { db, type ThemeCardOverrideEntity } from "@/lib/db"
 import { getAllThemes, type ThemePage } from "@/lib/sentences"
@@ -381,10 +381,9 @@ export function ThemedPages() {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {orderedSentences.map((sentence) => {
             const progress = progressMap[sentence.id] || getProgress(sentence.id)
-            const wide = isSentenceLong(sentence.german)
             const image = draftOverrides[sentence.id]?.image
 
             if (isEditing) {
@@ -393,7 +392,6 @@ export function ThemedPages() {
                   key={sentence.id}
                   sentence={sentence}
                   image={image}
-                  wide={wide}
                   onChange={(patch) => handleCardChange(sentence.id, patch)}
                   onUploadStatusChange={(uploading) =>
                     handleUploadStatusChange(sentence.id, uploading)
@@ -410,7 +408,6 @@ export function ThemedPages() {
                 ttsSpeed={settings.ttsSpeed}
                 onPractice={handlePractice}
                 onListen={handleListen}
-                wide={wide}
                 image={image}
                 secretImage={sentence.id === secretId ? "/images/secret-cat.png" : undefined}
                 onSecretFound={sentence.id === secretId ? handleSecretFound : undefined}
