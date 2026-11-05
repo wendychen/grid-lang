@@ -149,14 +149,16 @@ export function SentenceCell({ sentence, progress, ttsSpeed, onPractice, onListe
         </div>
 
         {image && (
-          <img
-            src={image.url}
-            alt={`Illustration for ${sentence.german}`}
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-            className="mt-3 aspect-[16/9] w-full rounded-md object-cover"
-          />
+          <div className="mt-3 aspect-[9/16] w-full overflow-hidden rounded-md">
+            <img
+              src={image.url}
+              alt={`Illustration for ${sentence.german}`}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              className="h-full w-full object-cover"
+            />
+          </div>
         )}
 
         {/* Bottom area: toggles between translation and practice info */}
