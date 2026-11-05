@@ -13,7 +13,6 @@ import {
   type ThemeCardImage,
 } from "@/lib/theme-card-images"
 import type { Sentence } from "@/lib/sentences"
-import { cn } from "@/lib/utils"
 
 type ThemeSentencePatch = Partial<
   Pick<ThemeCardOverrideEntity, "german" | "english" | "phonetic" | "image">
@@ -22,7 +21,6 @@ type ThemeSentencePatch = Partial<
 interface ThemeSentenceEditorProps {
   sentence: Sentence
   image?: ThemeCardImage
-  wide: boolean
   onChange: (patch: ThemeSentencePatch) => void
   onUploadStatusChange: (uploading: boolean) => void
 }
@@ -30,7 +28,6 @@ interface ThemeSentenceEditorProps {
 export function ThemeSentenceEditor({
   sentence,
   image,
-  wide,
   onChange,
   onUploadStatusChange,
 }: ThemeSentenceEditorProps) {
@@ -91,12 +88,7 @@ export function ThemeSentenceEditor({
   }
 
   return (
-    <article
-      className={cn(
-        "flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-3.5",
-        wide && "sm:col-span-2",
-      )}
-    >
+    <article className="flex h-full flex-col gap-3 rounded-lg border border-border bg-card p-3.5">
       <fieldset className="m-0 flex min-w-0 flex-col gap-3 border-0 p-0">
         <legend className="sr-only">Edit sentence card {sentence.id}</legend>
         <label className="flex flex-col gap-1.5">

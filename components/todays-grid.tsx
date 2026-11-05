@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { SentenceCell, isSentenceLong } from "@/components/sentence-cell"
+import { SentenceCell } from "@/components/sentence-cell"
 import { getAllSentences, type Sentence } from "@/lib/sentences"
 import {
   getTodaysQueue,
@@ -160,7 +160,6 @@ export function TodaysGrid() {
             const sentence = sentenceMap.get(id)
             if (!sentence) return null
             const progress = progressMap[id] || getProgress(id)
-            const wide = isSentenceLong(sentence.german)
             return (
               <SentenceCell
                 key={id}
@@ -169,7 +168,6 @@ export function TodaysGrid() {
                 ttsSpeed={settings.ttsSpeed}
                 onPractice={handlePractice}
                 onListen={handleListen}
-                wide={wide}
                 secretImage={id === secretId ? "/images/secret-cat.png" : undefined}
                 onSecretFound={id === secretId ? handleSecretFound : undefined}
               />
