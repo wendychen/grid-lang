@@ -3,12 +3,14 @@
 import React from "react"
 
 import { useState, useCallback, useEffect, useRef } from "react"
+import useSWR from "swr"
 import { useLiveQuery } from "dexie-react-hooks"
 import { Button } from "@/components/ui/button"
 import { SentenceCell } from "@/components/sentence-cell"
 import { ThemeSentenceEditor } from "@/components/theme-sentence-editor"
 import { db, type ThemeCardOverrideEntity } from "@/lib/db"
 import { getAllThemes, type ThemePage } from "@/lib/sentences"
+import { normalizeThemeCardImage, type ThemeCardImage } from "@/lib/theme-card-images"
 import {
   createThemeCardOverrideId,
   saveThemeCardOverrides,
@@ -67,7 +69,30 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   dog: Dog,
 }
 
+async function fetchSharedThemeImages(url: string): Promise<Record<string, ThemeCardImage>> {
+  const response = await fetch(url, { cache: "no-store" })
+  if (!response.ok) throw new Error("Failed to load shared theme card images.")
+
+  const payload: unknown = await response.json()
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {}
+
+  const images = (payload as Record<string, unknown>).images
+  if (!images || typeof images !== "object" || Array.isArray(images)) return {}
+
+  const normalizedImages: Record<string, ThemeCardImage> = {}
+  for (const [sentenceId, value] of Object.entries(images)) {
+    if (!/^page\d+-s\d+$/.test(sentenceId)) continue
+    const image = normalizeThemeCardImage(value)
+    if (image) normalizedImages[sentenceId] = image
+  }
+  return normalizedImages
+}
+
 export function ThemedPages() {
+  const { data: sharedImages = {} } = useSWR<Record<string, ThemeCardImage>>(
+    "/api/theme-images",
+    fetchSharedThemeImages,
+  )
   const [themes, setThemes] = useState<ThemePage[]>([])
   const [selectedTheme, setSelectedTheme] = useState<ThemePage | null>(null)
   const [progressMap, setProgressMap] = useState<Record<string, SentenceProgress>>({})
@@ -384,7 +409,7 @@ export function ThemedPages() {
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {orderedSentences.map((sentence) => {
             const progress = progressMap[sentence.id] || getProgress(sentence.id)
-            const image = draftOverrides[sentence.id]?.image
+            const image = draftOverrides[sentence.id]?.image ?? sharedImages[sentence.id]
 
             if (isEditing) {
               return (

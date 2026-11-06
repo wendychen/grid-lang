@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto"
-import { put } from "@vercel/blob"
+import { list, put } from "@vercel/blob"
 import { type NextRequest, NextResponse } from "next/server"
 import {
   isThemeCardImageContentType,
   MAX_THEME_IMAGE_BYTES,
+  normalizeThemeCardImage,
+  type ThemeCardImage,
   type ThemeCardImageContentType,
 } from "@/lib/theme-card-images"
 
@@ -13,6 +15,63 @@ const FILE_EXTENSIONS: Record<ThemeCardImageContentType, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+}
+
+const THEME_CARD_PATH = /^theme-cards\/(page\d+)\/(page\d+-s\d+)\/[^/]+\.(jpg|jpeg|png|webp)$/i
+const CONTENT_TYPE_BY_EXTENSION: Record<string, ThemeCardImageContentType> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+}
+
+export const dynamic = "force-dynamic"
+
+export async function GET() {
+  try {
+    const images: Record<string, ThemeCardImage> = {}
+    let cursor: string | undefined
+
+    do {
+      const page = await list({ prefix: "theme-cards/", limit: 1000, cursor })
+
+      for (const blob of page.blobs) {
+        const match = blob.pathname.match(THEME_CARD_PATH)
+        if (!match) continue
+
+        const [, themeId, sentenceId, extension] = match
+        if (sentenceId.split("-s")[0] !== themeId) continue
+
+        const contentType = CONTENT_TYPE_BY_EXTENSION[extension.toLowerCase()]
+        const image = normalizeThemeCardImage({
+          url: blob.url,
+          pathname: blob.pathname,
+          contentType,
+          size: blob.size,
+          uploadedAt: blob.uploadedAt.toISOString(),
+        })
+        if (!image) continue
+
+        const currentImage = images[sentenceId]
+        if (!currentImage || Date.parse(image.uploadedAt) > Date.parse(currentImage.uploadedAt)) {
+          images[sentenceId] = image
+        }
+      }
+
+      cursor = page.hasMore ? page.cursor : undefined
+    } while (cursor)
+
+    return NextResponse.json(
+      { images },
+      { headers: { "Cache-Control": "no-store" } },
+    )
+  } catch (error) {
+    console.error("[v0] Theme image listing failed:", error)
+    return NextResponse.json(
+      { error: "Unable to load shared card images." },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
+    )
+  }
 }
 
 function isSameOriginRequest(request: NextRequest): boolean {
