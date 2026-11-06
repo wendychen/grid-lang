@@ -1,6 +1,6 @@
 # GridLang Roadmap
 
-A checklist of planned features, refactoring work, and bug fixes.
+A checklist of planned features, refactoring work, and bug fixes. Checked items are supported by the current repository implementation; this does not imply end-to-end production verification.
 
 ## Add Features
 
@@ -13,7 +13,7 @@ A checklist of planned features, refactoring work, and bug fixes.
 
 ### 2. Optional Images for Vocabulary
 
-- [ ] Allow users to optionally upload an image for each vocabulary item.
+- [x] Allow users to optionally upload an image for each vocabulary item.
 
 ### 3. Bulk Image Upload
 
@@ -25,7 +25,7 @@ A checklist of planned features, refactoring work, and bug fixes.
 
 ### 5. Graph Visualization
 
-- [ ] Redesign the nodes in the **Graph** tab as a network graph, similar to a neural network, to make relationships between items easier to explore.
+- [x] Render the **Graph** tab as an interactive network graph with nodes, connections, and a force-directed layout (Cytoscape.js).
 
 ### 6. Remember Button in Today
 
@@ -52,9 +52,9 @@ A checklist of planned features, refactoring work, and bug fixes.
 
 ### 1. Preserve Heatmap Activity During Data Import and Export
 
-- [ ] **1.1** Include the relevant heatmap activity data when exporting / downloading a backup file.
-- [ ] **1.2** Restore and record the heatmap activity data when importing a JSON backup.
+- [x] **1.1** Include the relevant heatmap activity data when exporting / downloading a backup file.
+- [x] **1.2** Restore and record the heatmap activity data when importing a JSON backup.
 
 ### 2. Randomize Today's Sentences
 
-- [ ] Ensure the sentences displayed in **Today** are selected randomly.
+- [x] Select Today's sentences using a date-seeded shuffle (stable within the same day; not a fresh random draw on every refresh).
