@@ -214,7 +214,7 @@ export function ThemeSentenceEditor({
                 size="sm"
                 onClick={() => {
                   setUploadError(null)
-                  onChange({ image: undefined })
+                  onChange({ image: null })
                 }}
                 disabled={isUploading}
               >

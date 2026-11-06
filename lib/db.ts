@@ -100,7 +100,7 @@ export interface ThemeCardOverrideEntity {
   german?: string
   english?: string
   phonetic?: string
-  image?: ThemeCardImage
+  image?: ThemeCardImage | null
   updatedAt: string
 }
 

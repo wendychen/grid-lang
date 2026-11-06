@@ -409,7 +409,8 @@ export function ThemedPages() {
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {orderedSentences.map((sentence) => {
             const progress = progressMap[sentence.id] || getProgress(sentence.id)
-            const image = draftOverrides[sentence.id]?.image ?? sharedImages[sentence.id]
+            const imageOverride = draftOverrides[sentence.id]?.image
+            const image = imageOverride === null ? undefined : imageOverride ?? sharedImages[sentence.id]
 
             if (isEditing) {
               return (
