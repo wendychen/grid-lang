@@ -58,3 +58,15 @@ A checklist of planned features, refactoring work, and bug fixes. Checked items 
 ### 2. Randomize Today's Sentences
 
 - [x] Select Today's sentences using a date-seeded shuffle (stable within the same day; not a fresh random draw on every refresh).
+
+### 3. Food & Ordering: Card Does Not Move to End of Queue After Three Clicks
+
+- [ ] In the **Food & Ordering** theme, starting with the **"Können wir zahlen?"** card, clicking/practicing a card three times does not move it to the end of the theme's queue.
+- [ ] Fix the queue reorder behavior so a card moves to the last position after the third qualifying practice click, and verify the behavior for subsequent cards in the theme.
+
+### 4. Edit Card: Remove Image Button Does Nothing
+
+**Status:** In progress (ongoing).
+
+- [ ] Fix the **Remove image** action in **Edit Card**; currently clicking the button has no visible effect.
+- [ ] Ensure removing an image clears its association with the card, persists after saving/reloading, and updates the card preview and display accordingly.
