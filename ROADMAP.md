@@ -66,7 +66,7 @@ A checklist of planned features, refactoring work, and bug fixes. Checked items 
 
 ### 4. Edit Card: Remove Image Button Does Nothing
 
-**Status:** In progress (ongoing).
+**Status:** Completed.
 
-- [ ] Fix the **Remove image** action in **Edit Card**; currently clicking the button has no visible effect.
-- [ ] Ensure removing an image clears its association with the card, persists after saving/reloading, and updates the card preview and display accordingly.
+- [x] Fix the **Remove image** action in **Edit Card**; previously clicking the button had no visible effect.
+- [x] Ensure removing an image clears its association with the card, persists after saving/reloading, and updates the card preview and display accordingly.
