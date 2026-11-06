@@ -45,8 +45,12 @@ export function normalizeThemeCardOverride(value: unknown): ThemeCardOverrideEnt
     override.phonetic = input.phonetic.slice(0, MAX_THEME_TEXT_LENGTH)
   }
 
-  const image = normalizeThemeCardImage(input.image)
-  if (image) override.image = image
+  if (input.image === null) {
+    override.image = null
+  } else {
+    const image = normalizeThemeCardImage(input.image)
+    if (image) override.image = image
+  }
 
   return override
 }
