@@ -11,6 +11,7 @@ import { ThemeSentenceEditor } from "@/components/theme-sentence-editor"
 import { db, type ThemeCardOverrideEntity } from "@/lib/db"
 import { getAllThemes, type ThemePage } from "@/lib/sentences"
 import { normalizeThemeCardImage, type ThemeCardImage } from "@/lib/theme-card-images"
+import { SOURCE_THEME_CARD_IMAGES } from "@/lib/theme-card-source-images"
 import {
   createThemeCardOverrideId,
   saveThemeCardOverrides,
@@ -74,10 +75,14 @@ async function fetchSharedThemeImages(url: string): Promise<Record<string, Theme
   if (!response.ok) throw new Error("Failed to load shared theme card images.")
 
   const payload: unknown = await response.json()
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {}
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return SOURCE_THEME_CARD_IMAGES
+  }
 
   const images = (payload as Record<string, unknown>).images
-  if (!images || typeof images !== "object" || Array.isArray(images)) return {}
+  if (!images || typeof images !== "object" || Array.isArray(images)) {
+    return SOURCE_THEME_CARD_IMAGES
+  }
 
   const normalizedImages: Record<string, ThemeCardImage> = {}
   for (const [sentenceId, value] of Object.entries(images)) {
@@ -85,13 +90,14 @@ async function fetchSharedThemeImages(url: string): Promise<Record<string, Theme
     const image = normalizeThemeCardImage(value)
     if (image) normalizedImages[sentenceId] = image
   }
-  return normalizedImages
+  return { ...SOURCE_THEME_CARD_IMAGES, ...normalizedImages }
 }
 
 export function ThemedPages() {
-  const { data: sharedImages = {} } = useSWR<Record<string, ThemeCardImage>>(
+  const { data: sharedImages = SOURCE_THEME_CARD_IMAGES } = useSWR<Record<string, ThemeCardImage>>(
     "/api/theme-images",
     fetchSharedThemeImages,
+    { fallbackData: SOURCE_THEME_CARD_IMAGES },
   )
   const [themes, setThemes] = useState<ThemePage[]>([])
   const [selectedTheme, setSelectedTheme] = useState<ThemePage | null>(null)
