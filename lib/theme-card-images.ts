@@ -6,10 +6,10 @@ export type ThemeCardImageContentType = (typeof THEME_IMAGE_CONTENT_TYPES)[numbe
 
 export interface ThemeCardImage {
   url: string
-  pathname: string
-  contentType: ThemeCardImageContentType
-  size: number
-  uploadedAt: string
+  pathname?: string
+  contentType?: ThemeCardImageContentType
+  size?: number
+  uploadedAt?: string
 }
 
 export function isThemeCardImageContentType(value: string): value is ThemeCardImageContentType {
@@ -20,15 +20,7 @@ export function normalizeThemeCardImage(value: unknown): ThemeCardImage | undefi
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined
 
   const image = value as Record<string, unknown>
-  if (
-    typeof image.url !== "string" ||
-    typeof image.pathname !== "string" ||
-    typeof image.contentType !== "string" ||
-    typeof image.size !== "number" ||
-    typeof image.uploadedAt !== "string"
-  ) {
-    return undefined
-  }
+  if (typeof image.url !== "string") return undefined
 
   let url: URL
   try {
@@ -39,7 +31,24 @@ export function normalizeThemeCardImage(value: unknown): ThemeCardImage | undefi
 
   if (
     url.protocol !== "https:" ||
-    !url.hostname.toLowerCase().endsWith(".blob.vercel-storage.com") ||
+    !url.hostname.toLowerCase().endsWith(".blob.vercel-storage.com")
+  ) {
+    return undefined
+  }
+
+  const hasUploadMetadata =
+    image.pathname !== undefined ||
+    image.contentType !== undefined ||
+    image.size !== undefined ||
+    image.uploadedAt !== undefined
+
+  if (!hasUploadMetadata) return { url: url.toString() }
+
+  if (
+    typeof image.pathname !== "string" ||
+    typeof image.contentType !== "string" ||
+    typeof image.size !== "number" ||
+    typeof image.uploadedAt !== "string" ||
     !image.pathname.startsWith("theme-cards/") ||
     image.pathname.includes("..") ||
     !isThemeCardImageContentType(image.contentType) ||

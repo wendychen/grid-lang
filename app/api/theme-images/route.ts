@@ -52,8 +52,11 @@ export async function GET() {
         })
         if (!image) continue
 
-        const currentImage = images[sentenceId]
-        if (!currentImage || Date.parse(image.uploadedAt) > Date.parse(currentImage.uploadedAt)) {
+        const uploadedAt = image?.uploadedAt
+        if (!image || !uploadedAt) continue
+
+        const currentUploadedAt = images[sentenceId]?.uploadedAt
+        if (!currentUploadedAt || Date.parse(uploadedAt) > Date.parse(currentUploadedAt)) {
           images[sentenceId] = image
         }
       }
